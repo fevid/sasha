@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>V2RAY Converter (Vmess Vless Trojan Shadowsocks) Тестовый</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    * { font-weight: bold !important; }
+    body { background: #121212; color: #eee; font-family: monospace; margin: 0; padding: 10px;
+           display: flex; flex-direction: column; height: 100vh; box-sizing: border-box; }
+    h2 { text-align: center; margin: 10px 0 20px; font-size: 1.2em; }
+    .container { flex: 1; display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
+    .label { color: #bbb; font-size: 0.9em; margin-bottom: 4px; user-select: none; }
+    textarea { width: 100%; height: 150px; background: #1e1e1e; color: #eee; padding: 10px;
+               border-radius: 5px; resize: vertical; box-sizing: border-box; font-size: 14px;
+               line-height: 1.3em; border: 3px solid; font-family: monospace; }
+    #inputConfig { border-color: #28a745; }
+    #outputResult { border-color: #dc3545; }
+    .buttons-row { display: flex; width: 100%; gap: 10px; margin-top: 5px; }
+    .buttons-left, .buttons-right { display: flex; flex-direction: column; gap: 10px; width: 50%; }
+    .clear-row { margin-top: 10px; width: 100%; }
+    .clear-row button { width: 100%; }
+    button { color: #fff; padding: 10px 15px; border: none; cursor: pointer;
+             border-radius: 5px; font-size: 14px; user-select: none; white-space: nowrap;
+             transition: filter .2s ease; }
+    #btnConvert { background: #28a745; }
+    #btnConvertBack { background: #007bff; }
+    #btnTextBase64 { background: #ff9800; }
+    #btnClear { background: #dc3545; }
+    #btnCopy, #btnDownload { background: #000; border: 2px solid #999; }
+    #btnLoadFile { background: #6c757d; }
+    button:hover { filter: brightness(1.2); }
+    #fileInput { display: none; }
+
+    /* Фильтр */
+    #filterRow { display: flex; gap: 10px; margin-bottom: 5px; position: relative; }
+    #btnCountry {
+      width: 36px; height: 36px; padding: 0;
+      background: #007bff; border-radius: 5px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+    }
+    #filterInput {
+      flex: 1; height: 36px; padding: 0 10px; font-size: 14px;
+      border: 3px solid #007bff; border-radius: 5px;
+      background: #1e1e1e; color: #eee; box-sizing: border-box;
+    }
+    #btnFilter {
+      background: #007bff; color: #fff; border: none; border-radius: 5px;
+      padding: 0 15px; font-size: 14px; cursor: pointer;
+      white-space: nowrap; transition: filter .2s ease;
+    }
+    #btnFilter:hover { filter: brightness(1.2); }
+
+    /* Список стран */
+    #countryPopup {
+      position: absolute; top: 46px; left: 0;
+      width: 50vw; max-width: calc(100% - 20px);
+      height: calc(100vh - 160px); background: #1e1e1e;
+      border: 3px solid #007bff; border-radius: 5px;
+      overflow-y: auto; display: none; padding: 10px;
+      box-sizing: border-box; z-index: 100;
+    }
+    #countryPopup #countrySearch {
+      width: 100%; box-sizing: border-box; padding: 5px 10px;
+      margin-bottom: 8px; font-size: 14px;
+      border: 2px solid #007bff; border-radius: 5px;
+      background: #121212; color: #eee;
+    }
+    #countryPopup .country-item {
+      display: flex; align-items: center; padding: 5px 0; cursor: pointer;
+    }
+    #countryPopup .country-item:hover { background: #007bff22; }
+    #countryPopup .country-item span {
+      margin-left: 10px; color: #eee; font-size: 14px;
+    }
+
+    @media (max-width: 480px) {
+      textarea { height: 130px; font-size: 13px; }
+      .buttons-left button, .buttons-right button, #btnFilter, #btnCountry {
+        font-size: 13px; padding: 8px 12px;
+      }
+      #filterInput { font-size: 13px; height: 32px; }
+      #btnCountry { width: 32px; height: 32px; }
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/js-yaml@4/dist/js-yaml.min.js"></script>
+</head>
+<body>
+  <h2>V2RAY Converter (Vmess Vless Trojan Shadowsocks) Тестовый</h2>
+
+  <div class="label">Фильтр результата</div>
+  <div id="filterRow">
+    <button id="btnCountry">🌎</button>
+    <input id="filterInput" placeholder="ключевой текст или флаг..." />
+    <button id="btnFilter">ок</button>
+    <div id="countryPopup"></div>
+  </div>
+
+  <div class="container">
+    <div>
+      <div class="label">Исходный JSON или URL</div>
+      <textarea id="inputConfig" placeholder="Вставь конфиг или ссылку..."></textarea>
+    </div>
+    <div>
+      <div class="label">Результат</div>
+      <textarea id="outputResult" placeholder="Результат..."></textarea>
+    </div>
+    <div class="buttons-row">
+      <div class="buttons-left">
+        <button id="btnConvert">json → url</button>
+        <button id="btnConvertBack">url → json</button>
+        <button id="btnTextBase64">текст ↔ base64</button>
+      </div>
+      <div class="buttons-right">
+        <button id="btnCopy">скопировать</button>
+        <button id="btnDownload">скачать</button>
+        <button id="btnLoadFile">загрузить файл</button>
+      </div>
+    </div>
+    <div class="clear-row">
+      <button id="btnClear">очистить</button>
+    </div>
+  </div>
+  <input type="file" id="fileInput" accept=".txt,.json,.yaml,.yml">
+  <a id="hiddenDownloadLink" style="display:none;"></a>
+
+  <script>
+    function extractAllJSON(text) {
+      const res = [], stack = [], starts = [];
+      for (let i = 0; i < text.length; i++) {
+        if (text[i] === '{') { if (!stack.length) starts.push(i); stack.push('{'); }
+        else if (text[i] === '}') {
+          stack.pop();
+          if (!stack.length && starts.length) {
+            const start = starts.pop();
+            try { res.push(JSON.parse(text.slice(start, i+1))); } catch {}
+          }
+        }
+      }
+      return res;
+    }
+
+    const countries = [
+  { flag: '🌎', name: 'OFF' },
+  { flag: '🇦🇨', name: 'ASCENSION ISLAND' },
+  { flag: '🇦🇩', name: 'ANDORRA' },
+  { flag: '🇦🇪', name: 'UNITED ARAB EMIRATES' },
+  { flag: '🇦🇫', name: 'AFGHANISTAN' },
+  { flag: '🇦🇬', name: 'ANTIGUA AND BARBUDA' },
+  { flag: '🇦🇮', name: 'ANGUILLA' },
+  { flag: '🇦🇱', name: 'ALBANIA' },
+  { flag: '🇦🇲', name: 'ARMENIA' },
+  { flag: '🇦🇴', name: 'ANGOLA' },
+  { flag: '🇦🇶', name: 'ANTARCTICA' },
+  { flag: '🇦🇷', name: 'ARGENTINA' },
+  { flag: '🇦🇸', name: 'AMERICAN SAMOA' },
+  { flag: '🇦🇹', name: 'AUSTRIA' },
+  { flag: '🇦🇺', name: 'AUSTRALIA' },
+  { flag: '🇦🇼', name: 'ARUBA' },
+  { flag: '🇦🇽', name: 'ÅLAND ISLANDS' },
+  { flag: '🇦🇿', name: 'AZERBAIJAN' },
+  { flag: '🇧🇦', name: 'BOSNIA AND HERZEGOVINA' },
+  { flag: '🇧🇧', name: 'BARBADOS' },
+  { flag: '🇧🇩', name: 'BANGLADESH' },
+  { flag: '🇧🇪', name: 'BELGIUM' },
+  { flag: '🇧🇫', name: 'BURKINA FASO' },
+  { flag: '🇧🇬', name: 'BULGARIA' },
+  { flag: '🇧🇭', name: 'BAHRAIN' },
+  { flag: '🇧🇮', name: 'BURUNDI' },
+  { flag: '🇧🇯', name: 'BENIN' },
+  { flag: '🇧🇱', name: 'SAINT BARTHÉLEMY' },
+  { flag: '🇧🇲', name: 'BERMUDA' },
+  { flag: '🇧🇳', name: 'BRUNEI DARUSSALAM' },
+  { flag: '🇧🇴', name: 'BOLIVIA (PLURINATIONAL STATE OF)' },
+  { flag: '🇧🇶', name: 'BONAIRE, SINT EUSTATIUS AND SABA' },
+  { flag: '🇧🇷', name: 'BRAZIL' },
+  { flag: '🇧🇸', name: 'BAHAMAS' },
+  { flag: '🇧🇹', name: 'BHUTAN' },
+  { flag: '🇧🇻', name: 'BOUVET ISLAND' },
+  { flag: '🇧🇼', name: 'BOTSWANA' },
+  { flag: '🇧🇾', name: 'BELARUS' },
+  { flag: '🇧🇿', name: 'BELIZE' },
+  { flag: '🇨🇦', name: 'CANADA' },
+  { flag: '🇨🇨', name: 'COCOS (KEELING) ISLANDS' },
+  { flag: '🇨🇩', name: 'CONGO, THE DEMOCRATIC REPUBLIC OF THE' },
+  { flag: '🇨🇫', name: 'CENTRAL AFRICAN REPUBLIC' },
+  { flag: '🇨🇬', name: 'CONGO' },
+  { flag: '🇨🇭', name: 'SWITZERLAND' },
+  { flag: '🇨🇮', name: "CÔTE D'IVOIRE" },
+  { flag: '🇨🇰', name: 'COOK ISLANDS' },
+  { flag: '🇨🇱', name: 'CHILE' },
+  { flag: '🇨🇲', name: 'CAMEROON' },
+  { flag: '🇨🇳', name: 'CHINA' },
+  { flag: '🇨🇴', name: 'COLOMBIA' },
+  { flag: '🇨🇵', name: 'CLIPPERTON ISLAND' },
+  { flag: '🇨🇷', name: 'COSTA RICA' },
+  { flag: '🇨🇺', name: 'CUBA' },
+  { flag: '🇨🇻', name: 'CAPE VERDE' },
+  { flag: '🇨🇼', name: 'CURAÇAO' },
+  { flag: '🇨🇽', name: 'CHRISTMAS ISLAND' },
+  { flag: '🇨🇾', name: 'CYPRUS' },
+  { flag: '🇨🇿', name: 'CZECHIA' },
+  { flag: '🇩🇪', name: 'GERMANY' },
+  { flag: '🇩🇬', name: 'DIEGO GARCIA' },
+  { flag: '🇩🇯', name: 'DJIBOUTI' },
+  { flag: '🇩🇰', name: 'DENMARK' },
+  { flag: '🇩🇲', name: 'DOMINICA' },
+  { flag: '🇩🇴', name: 'DOMINICAN REPUBLIC' },
+  { flag: '🇩🇿', name: 'ALGERIA' },
+  { flag: '🇪🇨', name: 'ECUADOR' },
+  { flag: '🇪🇪', name: 'ESTONIA' },
+  { flag: '🇪🇬', name: 'EGYPT' },
+  { flag: '🇪🇭', name: 'WESTERN SAHARA' },
+  { flag: '🇪🇷', name: 'ERITREA' },
+  { flag: '🇪🇹', name: 'ETHIOPIA' },
+  { flag: '🇪🇺', name: 'EUROPEAN UNION' },
+  { flag: '🇫🇮', name: 'FINLAND' },
+  { flag: '🇫🇯', name: 'FIJI' },
+  { flag: '🇫🇰', name: 'FALKLAND ISLANDS (MALVINAS)' },
+  { flag: '🇫🇲', name: 'MICRONESIA (FEDERATED STATES OF)' },
+  { flag: '🇫🇴', name: 'FAROE ISLANDS' },
+  { flag: '🇫🇷', name: 'FRANCE' },
+  { flag: '🇬🇦', name: 'GABON' },
+  { flag: '🇬🇧', name: 'UNITED KINGDOM' },
+  { flag: '🇬🇩', name: 'GRENADA' },
+  { flag: '🇬🇪', name: 'GEORGIA' },
+  { flag: '🇬🇫', name: 'FRENCH GUIANA' },
+  { flag: '🇬🇬', name: 'GUERNSEY' },
+  { flag: '🇬🇭', name: 'GHANA' },
+  { flag: '🇬🇮', name: 'GIBRALTAR' },
+  { flag: '🇬🇱', name: 'GREENLAND' },
+  { flag: '🇬🇲', name: 'GAMBIA' },
+  { flag: '🇬🇳', name: 'GUINEA' },
+  { flag: '🇬🇵', name: 'GUADELOUPE' },
+  { flag: '🇬🇶', name: 'EQUATORIAL GUINEA' },
+  { flag: '🇬🇷', name: 'GREECE' },
+  { flag: '🇬🇸', name: 'SOUTH GEORGIA AND THE SOUTH SANDWICH ISLANDS' },
+  { flag: '🇬🇹', name: 'GUATEMALA' },
+  { flag: '🇬🇺', name: 'GUAM' },
+  { flag: '🇬🇼', name: 'GUINEA-BISSAU' },
+  { flag: '🇬🇾', name: 'GUYANA' },
+  { flag: '🇭🇰', name: 'HONG KONG' },
+  { flag: '🇭🇲', name: 'HEARD ISLAND AND MCDONALD ISLANDS' },
+  { flag: '🇭🇳', name: 'HONDURAS' },
+  { flag: '🇭🇷', name: 'CROATIA' },
+  { flag: '🇭🇹', name: 'HAITI' },
+  { flag: '🇭🇺', name: 'HUNGARY' },
+  { flag: '🇮🇨', name: 'CANARY ISLANDS' },
+  { flag: '🇮🇩', name: 'INDONESIA' },
+  { flag: '🇮🇪', name: 'IRELAND' },
+  { flag: '🇮🇱', name: 'ISRAEL' },
+  { flag: '🇮🇲', name: 'ISLE OF MAN' },
+  { flag: '🇮🇳', name: 'INDIA' },
+  { flag: '🇮🇴', name: 'BRITISH INDIAN OCEAN TERRITORY' },
+  { flag: '🇮🇶', name: 'IRAQ' },
+  { flag: '🇮🇷', name: 'IRAN (ISLAMIC REPUBLIC OF)' },
+  { flag: '🇮🇸', name: 'ICELAND' },
+  { flag: '🇮🇹', name: 'ITALY' },
+  { flag: '🇯🇪', name: 'JERSEY' },
+  { flag: '🇯🇲', name: 'JAMAICA' },
+  { flag: '🇯🇴', name: 'JORDAN' },
+  { flag: '🇯🇵', name: 'JAPAN' },
+  { flag: '🇰🇪', name: 'KENYA' },
+  { flag: '🇰🇬', name: 'KYRGYZSTAN' },
+  { flag: '🇰🇭', name: 'CAMBODIA' },
+  { flag: '🇰🇮', name: 'KIRIBATI' },
+  { flag: '🇰🇲', name: 'COMOROS' },
+  { flag: '🇰🇳', name: 'SAINT KITTS AND NEVIS' },
+  { flag: '🇰🇵', name: "KOREA (DEMOCRATIC PEOPLE'S REPUBLIC OF)" },
+  { flag: '🇰🇷', name: 'KOREA, REPUBLIC OF' },
+  { flag: '🇰🇼', name: 'KUWAIT' },
+  { flag: '🇰🇾', name: 'CAYMAN ISLANDS' },
+  { flag: '🇰🇿', name: 'KAZAKHSTAN' },
+  { flag: '🇱🇦', name: "LAO PEOPLE'S DEMOCRATIC REPUBLIC" },
+  { flag: '🇱🇧', name: 'LEBANON' },
+  { flag: '🇱🇨', name: 'SAINT LUCIA' },
+  { flag: '🇱🇮', name: 'LIECHTENSTEIN' },
+  { flag: '🇱🇰', name: 'SRI LANKA' },
+  { flag: '🇱🇷', name: 'LIBERIA' },
+  { flag: '🇱🇸', name: 'LESOTHO' },
+  { flag: '🇱🇹', name: 'LITHUANIA' },
+  { flag: '🇱🇺', name: 'LUXEMBOURG' },
+  { flag: '🇱🇻', name: 'LATVIA' },
+  { flag: '🇱🇾', name: 'LIBYA' },
+  { flag: '🇲🇦', name: 'MOROCCO' },
+  { flag: '🇲🇨', name: 'MONACO' },
+  { flag: '🇲🇩', name: 'MOLDOVA, REPUBLIC OF' },
+  { flag: '🇲🇪', name: 'MONTENEGRO' },
+  { flag: '🇲🇫', name: 'SAINT MARTIN (FRENCH PART)' },
+  { flag: '🇲🇬', name: 'MADAGASCAR' },
+  { flag: '🇲🇭', name: 'MARSHALL ISLANDS' },
+  { flag: '🇲🇰', name: 'NORTH MACEDONIA' },
+  { flag: '🇲🇱', name: 'MALI' },
+  { flag: '🇲🇲', name: 'MYANMAR' },
+  { flag: '🇲🇳', name: 'MONGOLIA' },
+  { flag: '🇲🇴', name: 'MACAO, SPECIAL ADMINISTRATIVE REGION OF CHINA' },
+  { flag: '🇲🇵', name: 'NORTHERN MARIANA ISLANDS' },
+  { flag: '🇲🇶', name: 'MARTINIQUE' },
+  { flag: '🇲🇷', name: 'MAURITANIA' },
+  { flag: '🇲🇸', name: 'MONTSERRAT' },
+  { flag: '🇲🇹', name: 'MALTA' },
+  { flag: '🇲🇺', name: 'MAURITIUS' },
+  { flag: '🇲🇻', name: 'MALDIVES' },
+  { flag: '🇲🇼', name: 'MALAWI' },
+  { flag: '🇲🇽', name: 'MEXICO' },
+  { flag: '🇲🇾', name: 'MALAYSIA' },
+  { flag: '🇲🇿', name: 'MOZAMBIQUE' },  
+  { flag: '🇳🇦', name: 'NAMIBIA' },
+  { flag: '🇳🇨', name: 'NEW CALEDONIA' },
+  { flag: '🇳🇪', name: 'NIGER' },
+  { flag: '🇳🇫', name: 'NORFOLK ISLAND' },
+  { flag: '🇳🇬', name: 'NIGERIA' },
+  { flag: '🇳🇮', name: 'NICARAGUA' },
+  { flag: '🇳🇱', name: 'NETHERLANDS' },
+  { flag: '🇳🇴', name: 'NORWAY' },
+  { flag: '🇳🇵', name: 'NEPAL' },
+  { flag: '🇳🇷', name: 'NAURU' },
+  { flag: '🇳🇺', name: 'NIUE' },
+  { flag: '🇳🇿', name: 'NEW ZEALAND' },
+  { flag: '🇴🇲', name: 'OMAN' },
+  { flag: '🇵🇦', name: 'PANAMA' },
+  { flag: '🇵🇪', name: 'PERU' },
+  { flag: '🇵🇫', name: 'FRENCH POLYNESIA' },
+  { flag: '🇵🇬', name: 'PAPUA NEW GUINEA' },
+  { flag: '🇵🇭', name: 'PHILIPPINES' },
+  { flag: '🇵🇰', name: 'PAKISTAN' },
+  { flag: '🇵🇱', name: 'POLAND' },
+  { flag: '🇵🇲', name: 'SAINT PIERRE AND MIQUELON' },
+  { flag: '🇵🇳', name: 'PITCAIRN' },  
+  { flag: '🇵🇷', name: 'PUERTO RICO' },
+  { flag: '🇵🇸', name: 'PALESTINE, STATE OF' },
+  { flag: '🇵🇹', name: 'PORTUGAL' },
+  { flag: '🇵🇼', name: 'PALAU' },
+  { flag: '🇵🇾', name: 'PARAGUAY' },
+  { flag: '🇶🇦', name: 'QATAR' },
+  { flag: '🇷🇪', name: 'RÉUNION' },
+  { flag: '🇷🇴', name: 'ROMANIA' },
+  { flag: '🇷🇸', name: 'SERBIA' },
+  { flag: '🇷🇺', name: 'RUSSIAN FEDERATION' },
+  { flag: '🇷🇼', name: 'RWANDA' },
+  { flag: '🇸🇦', name: 'SAUDI ARABIA' },
+  { flag: '🇸🇧', name: 'SOLOMON ISLANDS' },
+  { flag: '🇸🇨', name: 'SEYCHELLES' },
+  { flag: '🇸🇩', name: 'SUDAN' },
+  { flag: '🇸🇪', name: 'SWEDEN' },
+  { flag: '🇸🇬', name: 'SINGAPORE' },
+  { flag: '🇸🇭', name: 'SAINT HELENA, ASCENSION AND TRISTAN DA CUNHA' },
+  { flag: '🇸🇮', name: 'SLOVENIA' },
+  { flag: '🇸🇯', name: 'SVALBARD AND JAN MAYEN' },
+  { flag: '🇸🇰', name: 'SLOVAKIA' },
+  { flag: '🇸🇱', name: 'SIERRA LEONE' },
+  { flag: '🇸🇲', name: 'SAN MARINO' },
+  { flag: '🇸🇳', name: 'SENEGAL' },
+  { flag: '🇸🇴', name: 'SOMALIA' },
+  { flag: '🇸🇷', name: 'SURINAME' },
+  { flag: '🇸🇸', name: 'SOUTH SUDAN' },
+  { flag: '🇸🇹', name: 'SAO TOME AND PRINCIPE' },
+  { flag: '🇸🇻', name: 'EL SALVADOR' },
+  { flag: '🇸🇽', name: 'SINT MAARTEN (DUTCH PART)' },
+  { flag: '🇪🇦', name: 'SPAIN' },
+  { flag: '🇪🇸', name: 'SPAIN' },
+  { flag: '🇸🇾', name: 'SYRIA' },
+  { flag: '🇸🇿', name: 'ESWATINI' },
+  { flag: '🇹🇦', name: 'TRISTAN DA CUNHA' },
+  { flag: '🇹🇨', name: 'TURKS AND CAICOS ISLANDS' },
+  { flag: '🇹🇩', name: 'CHAD' },
+  { flag: '🇹🇫', name: 'FRENCH SOUTHERN TERRITORIES' },
+  { flag: '🇹🇬', name: 'TOGO' },
+  { flag: '🇹🇭', name: 'THAILAND' },
+  { flag: '🇹🇯', name: 'TAJIKISTAN' },
+  { flag: '🇹🇰', name: 'TOKELAU' },
+  { flag: '🇹🇱', name: 'TIMOR-LESTE' },
+  { flag: '🇹🇲', name: 'TURKMENISTAN' },
+  { flag: '🇹🇳', name: 'TUNISIA' },
+  { flag: '🇹🇴', name: 'TONGA' },
+  { flag: '🇹🇷', name: 'TURKEY' },
+  { flag: '🇹🇹', name: 'TRINIDAD AND TOBAGO' },
+  { flag: '🇹🇻', name: 'TUVALU' },
+  { flag: '🇹🇼', name: 'TAIWAN' },
+  { flag: '🇹🇿', name: 'TANZANIA, UNITED REPUBLIC OF' },
+  { flag: '🇺🇦', name: 'UKRAINE' },
+  { flag: '🇺🇬', name: 'UGANDA' },
+  { flag: '🇺🇳', name: 'UNITED NATIONS' },
+  { flag: '🇺🇸', name: 'UNITED STATES OF AMERICA' },
+  { flag: '🇺🇾', name: 'URUGUAY' },
+  { flag: '🇺🇿', name: 'UZBEKISTAN' },
+  { flag: '🇻🇦', name: 'VATICAN CITY' },
+  { flag: '🇻🇨', name: 'SAINT VINCENT AND THE GRENADINES' },
+  { flag: '🇻🇪', name: 'VENEZUELA (BOLIVARIAN REPUBLIC OF)' },
+  { flag: '🇻🇬', name: 'VIRGIN ISLANDS (BRITISH)' },
+  { flag: '🇻🇮', name: 'VIRGIN ISLANDS (U.S.)' },
+  { flag: '🇻🇳', name: 'VIETNAM' },
+  { flag: '🇻🇺', name: 'VANUATU' },
+  { flag: '🇼🇫', name: 'WALLIS AND FUTUNA' },
+  { flag: '🇼🇸', name: 'SAMOA' },
+  { flag: '🇽🇰', name: 'KOSOVO' },
+  { flag: '🇾🇪', name: 'YEMEN' },
+  { flag: '🇾🇹', name: 'MAYOTTE' },
+  { flag: '🇿🇦', name: 'SOUTH AFRICA' },
+  { flag: '🇿🇲', name: 'ZAMBIA' },
+  { flag: '🇿🇼', name: 'ZIMBABWE' },
+  { flag: '🏴', name: 'BLACK FLAG' },
+  { flag: '🏴‍☠️', name: 'PIRATE FLAG' },
+  { flag: '🏴‍☠', name: 'PIRATE FLAG ALTERNATIVE' }
+];
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const inEl    = document.getElementById('inputConfig');
+      const outEl   = document.getElementById('outputResult');
+      const fileInput  = document.getElementById('fileInput');
+      const filterInput = document.getElementById('filterInput');
+      const btnFilter   = document.getElementById('btnFilter');
+      const btnCountry  = document.getElementById('btnCountry');
+      const countryPopup= document.getElementById('countryPopup');
+      let selectedCountry = 'OFF';
+
+      // Поле поиска внутри countryPopup
+      const countrySearch = document.createElement('input');
+      countrySearch.id = 'countrySearch';
+      countrySearch.placeholder = 'Поиск страны…';
+      countryPopup.appendChild(countrySearch);
+      const itemsContainer = document.createElement('div');
+      countryPopup.appendChild(itemsContainer);
+      countrySearch.addEventListener('input', () => {
+        const term = countrySearch.value.trim().toLowerCase();
+        itemsContainer.querySelectorAll('.country-item').forEach(item => {
+          item.style.display = item.dataset.name.toLowerCase().includes(term) ? 'flex' : 'none';
+        });
+      });
+      // Построение списка стран
+      countries.forEach(c => {
+        const item = document.createElement('div');
+        item.className = 'country-item';
+        item.innerHTML = `<span>${c.flag}</span><span>${c.name}</span>`;
+        item.dataset.name = c.name;
+        item.onclick = () => { selectedCountry = c.flag; btnCountry.textContent = c.flag; countryPopup.style.display = 'none'; };
+        itemsContainer.appendChild(item);
+      });
+      btnCountry.addEventListener('click', e => {
+        e.stopPropagation();
+        const open = countryPopup.style.display === 'block';
+        countryPopup.style.display = open ? 'none' : 'block';
+        if (!open) {
+          countrySearch.value = '';
+          countrySearch.focus();
+          itemsContainer.querySelectorAll('.country-item').forEach(i => i.style.display = 'flex');
+        }
+      });
+      document.addEventListener('click', () => countryPopup.style.display = 'none');
+      countryPopup.addEventListener('click', e => e.stopPropagation());
+
+      // Загрузка/очистка/копирование/скачивание
+      document.getElementById('btnLoadFile').onclick = () => fileInput.click();
+      fileInput.onchange = e => {
+        const fr = new FileReader();
+        fr.onload = () => inEl.value = fr.result;
+        fr.readAsText(e.target.files[0]);
+      };
+      document.getElementById('btnClear').onclick = () => { inEl.value = ''; outEl.value = ''; };
+      document.getElementById('btnCopy').onclick = async () => { await navigator.clipboard.writeText(outEl.value); alert('Скопировано!'); };
+      document.getElementById('btnDownload').onclick = () => {
+        const data = outEl.value.trim();
+        if (!data) return alert('Нет данных для скачивания');
+        const link = document.getElementById('hiddenDownloadLink');
+        link.href = URL.createObjectURL(new Blob([data], { type: 'text/plain' }));
+        link.download = 'result.txt';
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+      };
+
+      // Base64 ↔ текст
+      document.getElementById('btnTextBase64').onclick = () => {
+        const txt = inEl.value.trim();
+        if (!txt) { outEl.value = 'отсутствует текст'; return; }
+        try { outEl.value = decodeURIComponent(escape(atob(txt))); }
+        catch { try { outEl.value = btoa(unescape(encodeURIComponent(txt))); } catch { outEl.value = btoa(txt); } }
+      };
+
+      // JSON → URL и Clash YAML → URL
+      document.getElementById('btnConvert').onclick = () => {
+        const raw = inEl.value.trim();
+        if (!raw) { outEl.value = 'отсутствует ввод'; return; }
+        // Сначала пытаемся распарсить как Clash YAML
+        try {
+          const cfg = jsyaml.load(raw);
+          const proxies = cfg.proxies || [];
+          if (proxies.length) {
+            const urls = [];
+            proxies.forEach(p => {
+              const tag = encodeURIComponent(p.name || '');
+              if (p.type === 'trojan') {
+                urls.push(`trojan://${encodeURIComponent(p.password)}@${p.server}:${p.port}#${tag}`);
+              } else if (p.type === 'vmess') {
+                const qp = new URLSearchParams();
+                qp.set('encryption', p.cipher || 'auto');
+                qp.set('security', p.tls ? 'tls' : 'none');
+                qp.set('type', p.network || '');
+                if (p['ws-headers']?.Host) qp.set('host', p['ws-headers'].Host);
+                if (p['ws-path']) qp.set('path', p['ws-path']);
+                urls.push(`vmess://${p.uuid}@${p.server}:${p.port}?${qp.toString()}#${tag}`);
+              } else if (p.type === 'shadowsocks') {
+                const a = btoa(`${p.cipher}:${p.password}`).replace(/=+$/, '');
+                urls.push(`ss://${a}@${p.server}:${p.port}#${tag}`);
+              }
+            });
+            outEl.value = urls.join('\n') || 'не найдено proxies в YAML';
+            return;
+          }
+        } catch {}
+        // Иначе работаем с JSON
+        let rawJson = raw;
+        const f = rawJson.indexOf('{'), l = rawJson.lastIndexOf('}');
+        if (f !== -1 && l !== -1 && l > f) rawJson = rawJson.slice(f, l+1);
+        if (!rawJson.trim()) { outEl.value = 'отсутствует json'; return; }
+        const all = extractAllJSON(rawJson), urls = [];
+        all.forEach(obj => {
+          if (obj.configType === 'VLESS' && obj.customConfig && obj.password && obj.server) {
+            buildURLFromLegacy(obj, urls); return;
+          }
+          if (obj.outboundBean) { buildURLFromOutbound(obj.outboundBean, obj.remarks, urls); return; }
+          if (obj.custom_json && Array.isArray(obj.custom_json.outbounds)) {
+            buildURLsFromCustomJSON(obj, urls); return;
+          }
+          if (obj.server && obj.method && obj.password && obj.server_port) {
+            const a = btoa(`${obj.method}:${obj.password}`).replace(/=+$/,'');
+            let u = `ss://${a}@${obj.server}:${obj.server_port}`;
+            if (obj.remarks) u += `#${encodeURIComponent(obj.remarks)}`;
+            urls.push(u); return;
+          }
+          if (obj.configType==='VLESS' && obj.security==='reality' && obj.server) {
+            const p = new URLSearchParams();
+            p.set('encryption', obj.method||'none');
+            p.set('security', obj.security);
+            if (obj.flow) p.set('flow', obj.flow);
+            if (obj.alpn) p.set('alpn', Array.isArray(obj.alpn)?obj.alpn.join(','):obj.alpn);
+            p.set('allowInsecure', obj.insecure?'1':'0');
+            p.set('type', obj.network||'');
+            if (obj.sni) p.set('sni', obj.sni);
+            if (obj.fingerPrint) p.set('fp', obj.fingerPrint);
+            if (obj.publicKey) p.set('pbk', obj.publicKey);
+            if (obj.shortId) p.set('sid', obj.shortId);
+            const t = obj.remarks?encodeURIComponent(obj.remarks):'';
+            urls.push(`vless://${obj.password}@${obj.server}:${obj.serverPort}?${p.toString()}#${t}`);
+            return;
+          }
+          (obj.outbounds||obj.fullConfig?.outbounds||[]).forEach(o =>
+            buildURLFromOutbound(o, obj.remarks, urls)
+          );
+        });
+        outEl.value = urls.join('\n');
+      };
+
+      // URL → JSON
+      document.getElementById('btnConvertBack').onclick = () => {
+        if (!inEl.value.trim()) { outEl.value = 'отсутствует url'; return; }
+        const lines = inEl.value.trim().split(/\r?\n/).filter(Boolean), arr = [];
+        lines.forEach(line => {
+          if (line.startsWith('ss://')) {
+            const [main,hash] = line.slice(5).split('#'), tag = hash?decodeURIComponent(hash):'';
+            const [auth,hp] = main.split('@'), [m,pw] = atob(auth).split(':');
+            const [addr,port] = hp.split(':');
+            arr.push({
+              protocol:'shadowsocks', tag,
+              settings:{servers:[{address:addr,port:+port,method:m,password:pw}]},
+              streamSettings:{network:'tcp',security:'none',tcpSettings:{}}
+            });
+          } else {
+            try {
+              const u = new URL(line), proto = u.protocol.slice(0,-1), p = u.searchParams;
+              const tag = decodeURIComponent(u.hash.slice(1))||proto;
+              const typeParam = p.get('type')||'', headerType = p.get('headerType')||'';
+              const h = p.get('host')||'', pat = p.get('path')||'';
+              const ss = {
+                network:typeParam==='xhttp'?'splithttp':typeParam,
+                security:p.get('security')||'', packetEncoding:p.get('packetEncoding')||'',
+                tlsSettings:{
+                  serverName:p.get('sni')||'', fingerprint:p.get('fp')||'', allowInsecure:p.get('allowInsecure')==='1', alpn:p.get('alpn')?p.get('alpn').split(','):[]
+                },
+                realitySettings:{publicKey:p.get('pbk')||'', shortId:p.get('sid')||'', serverName:p.get('sni')||''},
+                kcpSettings:{seed:p.get('seed')||''},
+                grpcSettings:{serviceName:p.get('serviceName')||''}
+              };
+              if (headerType==='http'&&ss.network==='tcp') {
+                ss.tcpSettings={header:{type:'http',request:{headers:{Host:[h]},path:[pat]}}};
+              } else if (p.get('type')==='http') {
+                ss.httpSettings={host:[h],path:pat};
+              } else if (ss.network==='splithttp') {
+                ss.splithttpSettings={host:h,path:pat}; ss.xhttpSettings={host:h,path:pat};
+              } else if (ss.network==='httpupgrade') {
+                ss.httpupgradeSettings={host:h,path:pat};
+              } else if (ss.network==='ws'&&h) {
+                ss.wsSettings={headers:{Host:h},path:pat};
+              }
+              if (proto==='vless') arr.push({
+                protocol:'vless', tag,
+                settings:{vnext:[{address:u.hostname,port:+u.port,users:[{id:u.username,encryption:p.get('encryption')||'none',flow:p.get('flow')||''}]}]},
+                streamSettings:ss
+              });
+              if (proto==='vmess') arr.push({
+                protocol:'vmess', tag,
+                settings:{vnext:[{address:u.hostname,port:+u.port,users:[{id:u.username,security:p.get('encryption')||'auto'}]}]},
+                streamSettings:ss
+              });
+              if (proto==='trojan') arr.push({
+                protocol:'trojan', tag,
+                settings:{servers:[{address:u.hostname,port:+u.port,password:decodeURIComponent(u.username)}]},
+                streamSettings:ss
+              });
+            } catch {}
+          }
+        });
+        const conf = {
+          dns:{fallbackStrategy:'disabledIfAnyMatch',servers:[{address:'8.8.8.8',queryStrategy:'UseIP'}]},
+          inbounds:[
+            {listen:'0.0.0.0',port:10805,protocol:'socks',settings:{auth:'noauth',udp:true},tag:'sockets'},
+            {listen:'0.0.0.0',port:1080,protocol:'http',settings:{allowTransparent:true},tag:'http'},
+            {listen:'0.0.0.0',port:10804,protocol:'dokodemo-door',settings:{address:'0.0.0.0',network:'tcp,udp',port:10804},tag:'dns-in'}
+          ],
+          log:{loglevel:'warning'},
+          outbounds:arr,
+          policy:{levels:{'1':{connIdle:30}},system:{statsOutboundDownlink:true,statsOutboundUplink:true}},
+          routing:{domainStrategy:'AsIs',rules:[{inboundTag:['dns-in'],outboundTag:'dns-out',type:'field'}]},
+          stats:{}
+        };
+        outEl.value = JSON.stringify(conf,null,2);
+      };
+
+      // Фильтрация
+      btnFilter.onclick = () => {
+        const term = filterInput.value.trim().toLowerCase();
+        const lines = inEl.value.split(/\r?\n/);
+        outEl.value = lines.filter(l => {
+          let dec;
+          try { dec = decodeURIComponent(l); } catch { dec = l; }
+          const mt = !term || dec.toLowerCase().includes(term) || l.toLowerCase().includes(term);
+          const mc = selectedCountry==='OFF' || dec.includes(selectedCountry) || l.includes(selectedCountry);
+          return mt && mc;
+        }).map(l => {
+          try { return decodeURIComponent(l); } catch { return l; }
+        }).join('\n');
+      };
+
+      // Вспомогательные функции
+      function buildURLFromLegacy(o, urls) {
+        const p = new URLSearchParams();
+        p.set('security', o.method || 'none');
+        p.set('type', o.network || '');
+        if (o.headerType) p.set('headerType', o.headerType);
+        if (o.host) p.set('host', o.host);
+        if (o.sni) p.set('sni', o.sni);
+        if (o.path) p.set('path', o.path);
+        if (o.alpn) p.set('alpn', Array.isArray(o.alpn)? o.alpn.join(',') : o.alpn);
+        if (o.pbk) p.set('pbk', o.pbk);
+        if (o.sid) p.set('sid', o.sid);
+        p.set('allowInsecure', o.insecure ? '1' : '0');
+        if (o.seed) p.set('seed', o.seed);
+        if (o.serviceName) p.set('serviceName', o.serviceName);
+        const tag = encodeURIComponent(o.remarks || o.customConfig.name || '');
+        const base = `vless://${o.password}@${o.server}:${o.serverPort}`;
+        urls.push(`${base}?${p.toString()}#${tag}`);
+      }
+      function buildURLsFromCustomJSON(obj, urls) { obj.custom_json.outbounds.forEach(o => buildURLFromOutbound(o, obj.remarks, urls)); }
+      function buildURLFromOutbound(o, remarks, urls) {
+        const proto = o.protocol, tag = encodeURIComponent(remarks||o.tag||proto), p = new URLSearchParams();
+        let base = '';
+        if (proto==='shadowsocks') {
+          o.settings.servers.forEach(s => {
+            const a = btoa(`${s.method}:${s.password}`).replace(/=+$/,'');
+            urls.push(`ss://${a}@${s.address}:${s.port}#${tag}`);
+          });
+          return;
+        }
+        if (proto==='vmess'||proto==='vless') {
+          const v = o.settings.vnext[0], u = v.users[0];
+          base = `${proto}://${u.id}@${v.address}:${v.port}`;
+          p.set('encryption',u.encryption||u.security||(proto==='vmess'?'auto':'none'));
+          if (u.flow) p.set('flow',u.flow);
+        }
+        if (proto==='trojan') {
+          const s = o.settings.servers[0];
+          base = `trojan://${encodeURIComponent(s.password)}@${s.address}:${s.port}`;
+        }
+        if (!base) return;
+        const s = o.streamSettings||{}, tls = s.tlsSettings||{}, rel = s.realitySettings||{};
+        if (s.security) p.set('security',s.security);
+        if (tls.allowInsecure) p.set('allowInsecure','1');
+        if (Array.isArray(tls.alpn)) p.set('alpn',tls.alpn.join(','));
+        if (tls.serverName) p.set('sni',tls.serverName);
+        else if (rel.serverName) p.set('sni',rel.serverName);
+        if (tls.fingerprint) p.set('fp',tls.fingerprint);
+        if (rel.publicKey) p.set('pbk',rel.publicKey);
+        if (rel.shortId) p.set('sid',rel.shortId);
+        if (s.grpcSettings?.serviceName) p.set('serviceName',s.grpcSettings.serviceName);
+        if (s.kcpSettings?.seed) p.set('seed',s.kcpSettings.seed);
+        let net = s.network||'';
+        if (!net) {
+          if (s.wsSettings) net='ws';
+          else if (s.httpupgradeSettings) net='httpupgrade';
+          else if (s.splithttpSettings) net='splithttp';
+          else if (s.httpSettings) net='http';
+          else net='tcp';
+        }
+        if (net==='splithttp') net='xhttp';
+        p.set('type',net);
+        let host='', path='';
+        if (net==='ws') { host = s.wsSettings.headers?.Host||''; path = s.wsSettings.path||''; }
+        else if (net==='xhttp' && s.splithttpSettings) { host = s.splithttpSettings.host||''; path = s.splithttpSettings.path||''; }
+        else if (net==='httpupgrade' && s.httpupgradeSettings) { host = Array.isArray(s.httpupgradeSettings.host)?s.httpupgradeSettings.host[0]:s.httpupgradeSettings.host||''; path = s.httpupgradeSettings.path||''; }
+        else if (net==='http' && s.httpSettings) { host = Array.isArray(s.httpSettings.host)?s.httpSettings.host[0]:s.httpSettings.host||''; path = s.httpSettings.path||''; }
+        else if (net==='tcp' && s.tcpSettings?.header?.type==='http') {
+          const rq = s.tcpSettings.header.request;
+          host = (rq.headers?.Host||[''])[0]||''; path = (rq.path||[''])[0]||'';
+          p.set('headerType','http');
+        }
+        if (host) p.set('host',host);
+        if (path) p.set('path',path);
+        urls.push(`${base}?${p.toString()}#${tag}`);
+      }
+    });
+  </script>
+</body>
+</html>
