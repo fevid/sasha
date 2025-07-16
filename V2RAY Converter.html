@@ -44,7 +44,7 @@
     #filterInput { flex: 1; height: 36px; padding: 0 10px; font-size: 14px; border: 3px solid #007bff; border-radius: 5px; background: #1e1e1e; color: #eee; box-sizing: border-box; }
     #btnFilter { background: #007bff; color: #fff; border: none; border-radius: 5px; padding: 0 15px; font-size: 14px; cursor: pointer; height: 36px; }
 
-    #countryPopup { position: absolute; top: 96px; left: 10; width: 59vw; max-width: calc(100% - 20px); height: calc(100vh - 210px); background: #1e1e1e; border: 3px solid #007bff; border-radius: 5px; overflow: hidden; display: none; box-sizing: border-box; z-index:100; }
+    #countryPopup { position: absolute; top: 96px; left: 10px; width: 59vw; max-width: calc(100% - 20px); height: calc(100vh - 210px); background: #1e1e1e; border: 3px solid #007bff; border-radius: 5px; overflow: hidden; display: none; box-sizing: border-box; z-index:100; }
     #countryPopup .search-container { position: sticky; top: 0; background: #1e1e1e; padding: 10px; z-index: 1; box-shadow: 0 2px 4px rgba(0,0,0,0.5); }
     #countryPopup .search-container input { width: calc(100% - 20px); padding: 6px 10px; font-size: 14px; border: 2px solid #007bff; border-radius: 4px; background: #2a2a2a; color: #eee; box-sizing: border-box; }
     #countryPopup .country-list { height: calc(100% - 56px); overflow-y: auto; }
@@ -88,8 +88,14 @@
   </div>
 
   <div class="container">
-    <div><div class="label">Исходный JSON, URL, текст</div><textarea id="inputConfig" placeholder="Вставь json, url, текст..."></textarea></div>
-    <div><div class="label">Результат</div><textarea id="outputResult" placeholder="Результат..."></textarea></div>
+    <div>
+      <div class="label">Исходный JSON, URL, текст</div>
+      <textarea id="inputConfig" placeholder="Вставь json, url, текст..."></textarea>
+    </div>
+    <div>
+      <div class="label">Результат</div>
+      <textarea id="outputResult" placeholder="Результат..."></textarea>
+    </div>
     <div class="buttons-row">
       <div class="buttons-left">
         <button id="btnConvert">json → url</button>
@@ -102,15 +108,16 @@
         <button id="btnLoadFile">загрузить файл</button>
       </div>
     </div>
-    <div class="clear-row"><button id="btnClear">очистить</button></div>
+    <div class="clear-row">
+      <button id="btnClear">очистить</button>
+    </div>
   </div>
 
   <input type="file" id="fileInput" accept=".txt,.json,.yaml,.yml">
   <a id="hiddenDownloadLink" style="display:none;"></a>
 
   <script>
-    
-const countries = [
+    const countries = [
   { flag: '🌎', name: 'OFF' },
   { flag: '🇦🇫', name: 'AFGHANISTAN' },
   { flag: '🇦🇽', name: 'ALAND ISLAND' },
@@ -367,7 +374,7 @@ const countries = [
           stack.pop();
           if (!stack.length && starts.length) {
             const s = starts.pop();
-            try { res.push(JSON.parse(text.slice(s, i + 1))); } catch{}
+            try { res.push(JSON.parse(text.slice(s, i + 1))); } catch {}
           }
         }
       }
@@ -385,33 +392,146 @@ const countries = [
       return `${tpl}/${host}`;
     }
 
-    // Новая функция декодирования vmess://<Base64>
+    function buildURLFromOutbound(o, remarks, urls) {
+      const proto = o.protocol;
+      const tag = encodeURIComponent(remarks || o.tag || proto);
+      const p = new URLSearchParams();
+      let base = '';
+      if (proto === 'shadowsocks') {
+        (o.settings.servers || []).forEach(s => {
+          const a = btoa(`${s.method}:${s.password}`).replace(/=+$/, '');
+          urls.push(`ss://${a}@${s.address}:${s.port}#${tag}`);
+        });
+        return;
+      }
+      if (proto === 'vmess' || proto === 'vless') {
+        const v = o.settings.vnext?.[0], u = v?.users?.[0];
+        if (v && u) {
+          base = `${proto}://${u.id}@${v.address}:${v.port}`;
+          p.set('encryption', u.encryption || u.security || (proto === 'vmess' ? 'auto' : 'none'));
+          if (u.flow) p.set('flow', u.flow);
+        }
+      }
+      if (proto === 'trojan') {
+        const s = o.settings.servers?.[0];
+        if (s) base = `trojan://${encodeURIComponent(s.password)}@${s.address}:${s.port}`;
+      }
+      if (!base) return;
+      const s = o.streamSettings || {};
+      const tls = s.tlsSettings || {};
+      const rel = s.realitySettings || {};
+      if (s.security) p.set('security', s.security);
+      if (tls.allowInsecure) p.set('allowInsecure', '1');
+      if (Array.isArray(tls.alpn)) p.set('alpn', tls.alpn.join(','));
+      if (tls.serverName) p.set('sni', tls.serverName);
+      else if (rel.serverName) p.set('sni', rel.serverName);
+      if (tls.fingerprint) p.set('fp', tls.fingerprint);
+      if (rel.publicKey) p.set('pbk', rel.publicKey);
+      if (rel.shortId) p.set('sid', rel.shortId);
+      if (s.grpcSettings?.serviceName) p.set('serviceName', s.grpcSettings.serviceName);
+      if (s.kcpSettings?.seed) p.set('seed', s.kcpSettings.seed);
+      let net = s.network || (s.wsSettings ? 'ws' : s.httpupgradeSettings ? 'httpupgrade' : s.splithttpSettings ? 'splithttp' : s.httpSettings ? 'http' : 'tcp');
+      if (net === 'splithttp') net = 'xhttp';
+      p.set('type', net);
+      let host = '', path = '';
+      if (net === 'ws' && s.wsSettings) {
+        host = s.wsSettings.headers?.Host || '';
+        path = s.wsSettings.path || '';
+      } else if (net === 'xhttp' && s.splithttpSettings) {
+        host = s.splithttpSettings.host || '';
+        path = s.splithttpSettings.path || '';
+      } else if ((net === 'http' || net === 'xhttp' || net === 'httpupgrade') && s[net + 'Settings']) {
+        const cfg = s[net + 'Settings'];
+        host = Array.isArray(cfg.host) ? cfg.host[0] : cfg.host || '';
+        path = cfg.path || '';
+      } else if (net === 'tcp' && s.tcpSettings?.header?.type === 'http') {
+        const rq = s.tcpSettings.header.request;
+        host = (rq.headers?.Host || [''])[0] || '';
+        path = (rq.path || [''])[0] || '';
+        p.set('headerType', 'http');
+      }
+      if (host) p.set('host', host);
+      if (path) p.set('path', path);
+      urls.push(`${base}?${p.toString()}#${tag}`);
+    }
+
+    function handleSpecialJunkConfig(obj, urls) {
+      if (!obj.config || typeof obj.config !== 'string') return false;
+      try {
+        const cfg = JSON.parse(obj.config);
+        const rootAddress = obj.address || '';
+        const rootId = obj.server_id || '';
+        if (Array.isArray(cfg.outbounds)) {
+          cfg.outbounds.forEach(o => {
+            if (o.settings?.vnext?.[0] && !o.settings.vnext[0].address && rootAddress) {
+              o.settings.vnext[0].address = rootAddress;
+            }
+            if (o.settings?.vnext?.[0]?.users?.[0] && !o.settings.vnext[0].users[0].id && rootId) {
+              o.settings.vnext[0].users[0].id = rootId;
+            }
+            if (o.streamSettings?.realitySettings && cfg.outbounds[0].streamSettings?.realitySettings?.spiderX) {
+              o.streamSettings.realitySettings.spiderX = cfg.outbounds[0].streamSettings.realitySettings.spiderX;
+            }
+            buildURLFromOutbound(o, obj.remarks, urls);
+          });
+          return true;
+        }
+      } catch {}
+      return false;
+    }
+
+    function handleJunkConfig(obj, urls) {
+      if (obj.configType === 'SHADOWSOCKS' && obj.method && obj.password && obj.server && obj.serverPort) {
+        const a = btoa(`${obj.method}:${obj.password}`).replace(/=+$/, '');
+        const tag = encodeURIComponent(obj.remarks || '');
+        urls.push(`ss://${a}@${obj.server}:${obj.serverPort}#${tag}`);
+        return true;
+      }
+      if (obj.configType === 'VLESS' && obj.password && obj.server && obj.serverPort) {
+        const params = new URLSearchParams();
+        params.set('encryption', obj.method || 'none');
+        params.set('security', obj.security || '');
+        if (obj.flow) params.set('flow', obj.flow);
+        if (obj.network) params.set('type', obj.network);
+        if (obj.headerType) params.set('headerType', obj.headerType);
+        if (obj.host) params.set('host', obj.host);
+        if (obj.path) params.set('path', obj.path);
+        if (obj.sni) params.set('sni', obj.sni);
+        if (obj.fingerPrint) params.set('fp', obj.fingerPrint);
+        if (obj.alpn) params.set('alpn', Array.isArray(obj.alpn) ? obj.alpn.join(',') : obj.alpn);
+        if (obj.publicKey) params.set('pbk', obj.publicKey);
+        if (obj.shortId) params.set('sid', obj.shortId);
+        if (obj.allowInsecure !== undefined) params.set('allowInsecure', obj.allowInsecure ? '1' : '0');
+        const tag = encodeURIComponent(obj.remarks || '');
+        urls.push(`vless://${obj.password}@${obj.server}:${obj.serverPort}?${params.toString()}#${tag}`);
+        return true;
+      }
+      return false;
+    }
+
     function decodeVmessBase64(line) {
       try {
         const b64 = line.replace(/^vmess:\/\//, '').trim();
         const json = JSON.parse(atob(b64));
         const ps = encodeURIComponent(json.ps || '');
-        const add = json.add;
-        const port = json.port;
-        const id  = json.id;
+        const add = json.add, port = json.port, id = json.id;
         const params = new URLSearchParams();
-        if (json.security)      params.set('security', json.security);
-        if (json.encryption)    params.set('encryption', json.encryption);
-        if (json.net)           params.set('type', json.net);
-        if (json.type)          params.set('headerType', json.type);
-        if (json.host)          params.set('host', json.host);
-        if (json.path)          params.set('path', json.path);
-        if (json.sni)           params.set('sni', json.sni);
-        if (json.fingerprint)   params.set('fp', json.fingerprint);
-        if (json.alpn)          params.set('alpn', Array.isArray(json.alpn) ? json.alpn.join(',') : json.alpn);
-        if (json.flow)          params.set('flow', json.flow);
-        if (json.pbk)           params.set('pbk', json.pbk);
-        if (json.sid)           params.set('sid', json.sid);
-        if (json.seed)          params.set('seed', json.seed);
-        if (json.serviceName)   params.set('serviceName', json.serviceName);
+        if (json.security) params.set('security', json.security);
+        if (json.encryption) params.set('encryption', json.encryption);
+        if (json.net) params.set('type', json.net);
+        if (json.type) params.set('headerType', json.type);
+        if (json.host) params.set('host', json.host);
+        if (json.path) params.set('path', json.path);
+        if (json.sni) params.set('sni', json.sni);
+        if (json.fingerprint) params.set('fp', json.fingerprint);
+        if (json.alpn) params.set('alpn', Array.isArray(json.alpn) ? json.alpn.join(',') : json.alpn);
+        if (json.flow) params.set('flow', json.flow);
+        if (json.pbk) params.set('pbk', json.pbk);
+        if (json.sid) params.set('sid', json.sid);
+        if (json.seed) params.set('seed', json.seed);
+        if (json.serviceName) params.set('serviceName', json.serviceName);
         if (json.allowInsecure) params.set('allowInsecure', json.allowInsecure ? '1' : '0');
-        const query = params.toString();
-        return `vmess://${id}@${add}:${port}${query ? '?' + query : ''}#${ps}`;
+        return `vmess://${id}@${add}:${port}${params.toString() ? '?' + params.toString() : ''}#${ps}`;
       } catch {
         return line;
       }
@@ -433,7 +553,6 @@ const countries = [
 
       let selectedCountry = 'OFF';
 
-      // Popup выбора страны
       function initCountryPopup() {
         countryPopup.innerHTML = '';
         const container = document.createElement('div');
@@ -483,14 +602,11 @@ const countries = [
         spinner.style.display = spinning ? 'inline-block' : 'none';
       }
 
-      // Функции ping
       async function pingHost(host) {
-        const controller = new AbortController();
-        const timeoutMs = 5000;
-        const start = performance.now();
+        const timeoutMs = 5000, start = performance.now();
         try {
           await Promise.race([
-            fetch(`${location.protocol}//${host}`, { mode: 'no-cors', signal: controller.signal }),
+            fetch(`${location.protocol}//${host}`, { mode: 'no-cors' }),
             new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), timeoutMs))
           ]);
           const duration = Math.round(performance.now() - start);
@@ -499,9 +615,9 @@ const countries = [
           return { host, time: Infinity, status: '❌ тайм-аут' };
         }
       }
-      let pinging = false, controllers = [], resultsPing = [];
+      let pinging = false, resultsPing = [];
       async function pingAll() {
-        pinging = true; controllers = []; resultsPing = [];
+        pinging = true; resultsPing = [];
         const lines = inEl.value.split(/\r?\n/).filter(Boolean), total = lines.length;
         for (let i = 0; i < total; i++) {
           if (!pinging) break;
@@ -510,27 +626,22 @@ const countries = [
           catch { const m = lines[i].match(/\/\/([^\/:]+)/); host = m ? m[1] : lines[i]; }
           const res = await pingHost(host);
           resultsPing.push({ original: lines[i], ...res });
-          setStatus(`пинг… ${Math.round(resultsPing.length / total * 100)}%`, true);
+          setStatus(`пинг… ${Math.round(resultsPing.length/total*100)}%`, true);
           const sorted = resultsPing.slice().sort((a, b) => a.time - b.time);
           outEl.value = sorted.map(r => `${r.original} ${r.status}`).join('\n');
         }
         setStatus('готово!', false); pinging = false;
       }
-      function cancelPing() { pinging = false; controllers.forEach(c => c.abort()); setStatus('', false); }
-      btnPing.onclick = () => pinging ? cancelPing() : pingAll();
+      btnPing.onclick = () => pinging ? (pinging = false, setStatus('', false)) : pingAll();
 
-      // Обработчик "ок" (фильтр/GeoIP) с декодированием vmess-base64
       btnFilter.onclick = async () => {
         const rawLines = inEl.value.split(/\r?\n/).filter(Boolean);
-        // Декодируем vmess://<Base64> в стандартный вид
         const lines = rawLines.map(line => {
-          if (line.trim().startsWith('vmess://') && /^[A-Za-z0-9+/=]+$/.test(line.replace(/^vmess:\/\//, '').trim())) {
+          if (line.trim().startsWith('vmess://') && /^[A-Za-z0-9+/=]+$/.test(line.replace(/^vmess:\/\//,''))) {
             return decodeVmessBase64(line);
           }
           return line;
         });
-
-        // Если в filterInput URL — скачиваем тексты
         if (filterInput.value.trim().match(/^https?:\/\//)) {
           const urls = filterInput.value.trim().split(/\s+/);
           const downloaded = [];
@@ -539,14 +650,12 @@ const countries = [
             let txt = '';
             try {
               const resp = await fetch(urls[i]);
-              if (!resp.ok) throw new Error();
-              txt = await resp.text();
+              txt = resp.ok ? await resp.text() : '';
             } catch {
               const proxy = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(urls[i]);
               const resp2 = await fetch(proxy);
               txt = resp2.ok ? await resp2.text() : '';
             }
-            // Если Base64-код, декодируем
             const b64 = txt.trim().replace(/\s+/g, '');
             if (/^[A-Za-z0-9+/=]+$/.test(b64) && b64.length % 4 === 0) {
               try { txt = atob(b64); } catch {}
@@ -558,12 +667,9 @@ const countries = [
           setStatus('готово!', false);
           return;
         }
-
-        // Иначе фильтрация или GeoIP
         btnFilter.disabled = true;
         setStatus('запуск...<br>0%', true);
         const total = lines.length, results = [];
-
         if (ipGeoToggle.checked) {
           const seen = {};
           for (let i = 0; i < total; i++) {
@@ -592,13 +698,11 @@ const countries = [
             setStatus(`обработка...<br>${Math.round((i+1)/total*100)}%`, true);
           }
         }
-
         outEl.value = results.join('\n');
         setStatus('готово!', false);
         btnFilter.disabled = false;
       };
 
-      // json → url
       document.getElementById('btnConvert').onclick = () => {
         let raw = inEl.value;
         const f = raw.indexOf('{'), l = raw.lastIndexOf('}');
@@ -606,6 +710,8 @@ const countries = [
         if (!raw.trim()) { outEl.value = 'отсутствует json'; return; }
         const objs = extractAllJSON(raw), urls = [];
         objs.forEach(obj => {
+          if (handleSpecialJunkConfig(obj, urls)) return;
+          if (handleJunkConfig(obj, urls)) return;
           if (obj.configType === 'VLESS' && obj.customConfig && obj.password && obj.server) {
             buildURLFromLegacy(obj, urls); return;
           }
@@ -640,7 +746,6 @@ const countries = [
         outEl.value = urls.join('\n');
       };
 
-      // url → json
       document.getElementById('btnConvertBack').onclick = () => {
         if (!inEl.value.trim()) { outEl.value = 'отсутствует url'; return; }
         const lines = inEl.value.trim().split(/\r?\n/).filter(Boolean), arr = [];
@@ -697,12 +802,14 @@ const countries = [
                   settings: { vnext: [{ address: u.hostname, port: +u.port, users: [{ id: u.username, security: p.get('encryption') || 'auto' }] }] },
                   streamSettings: ssConf
                 });
-              if (proto === 'trojan')
+              if (proto === 'trojan') {
+                if (!ssConf.network) ssConf.network = 'tcp';
                 arr.push({
                   protocol: 'trojan', tag,
                   settings: { servers: [{ address: u.hostname, port: +u.port, password: decodeURIComponent(u.username) }] },
                   streamSettings: ssConf
                 });
+              }
             } catch {}
           }
         });
@@ -722,7 +829,6 @@ const countries = [
         outEl.value = JSON.stringify(conf, null, 2);
       };
 
-      // Вспомогательные функции для json→url
       function buildURLFromLegacy(o, urls) {
         const p = new URLSearchParams();
         p.set('security', o.method || 'none');
@@ -741,88 +847,27 @@ const countries = [
         const base = `vless://${o.password}@${o.server}:${o.serverPort}`;
         urls.push(`${base}?${p.toString()}#${tag}`);
       }
+
       function buildURLsFromOutboundBean(obj, urls) {
         buildURLFromOutbound(obj.outboundBean, obj.remarks, urls);
       }
-      function buildURLFromOutbound(o, remarks, urls) {
-        const proto = o.protocol, tag = encodeURIComponent(remarks || o.tag || proto), p = new URLSearchParams();
-        let base = '';
-        if (proto === 'shadowsocks') {
-          (o.settings.servers || []).forEach(s => {
-            const a = btoa(`${s.method}:${s.password}`).replace(/=+$/, '');
-            urls.push(`ss://${a}@${s.address}:${s.port}#${tag}`);
-          });
-          return;
-        }
-        if (proto === 'vmess' || proto === 'vless') {
-          const v = o.settings.vnext?.[0], u = v?.users?.[0];
-          if (v && u) {
-            base = `${proto}://${u.id}@${v.address}:${v.port}`;
-            p.set('encryption', u.encryption || u.security || (proto === 'vmess' ? 'auto' : 'none'));
-            if (u.flow) p.set('flow', u.flow);
-          }
-        }
-        if (proto === 'trojan') {
-          const s = o.settings.servers?.[0];
-          if (s) base = `trojan://${encodeURIComponent(s.password)}@${s.address}:${s.port}`;
-        }
-        if (!base) return;
-        const s = o.streamSettings || {}, tls = s.tlsSettings || {}, rel = s.realitySettings || {};
-        if (s.security)       p.set('security', s.security);
-        if (tls.allowInsecure) p.set('allowInsecure', '1');
-        if (Array.isArray(tls.alpn)) p.set('alpn', tls.alpn.join(','));
-        if (tls.serverName)    p.set('sni', tls.serverName);
-        else if (rel.serverName) p.set('sni', rel.serverName);
-        if (tls.fingerprint)   p.set('fp', tls.fingerprint);
-        if (rel.publicKey)     p.set('pbk', rel.publicKey);
-        if (rel.shortId)       p.set('sid', rel.shortId);
-        if (s.grpcSettings?.serviceName) p.set('serviceName', s.grpcSettings.serviceName);
-        if (s.kcpSettings?.seed)        p.set('seed', s.kcpSettings.seed);
-        let net = s.network || (s.wsSettings ? 'ws' : s.httpupgradeSettings ? 'httpupgrade' : s.splithttpSettings ? 'splithttp' : s.httpSettings ? 'http' : 'tcp');
-        if (net === 'splithttp') net = 'xhttp';
-        p.set('type', net);
-        let host = '', path = '';
-        if (net === 'ws' && s.wsSettings) {
-          host = s.wsSettings.headers?.Host || '';
-          path = s.wsSettings.path || '';
-        } else if (net === 'xhttp' && s.splithttpSettings) {
-          host = s.splithttpSettings.host || '';
-          path = s.splithttpSettings.path || '';
-        } else if ((net === 'http' || net === 'xhttp' || net === 'httpupgrade') && s[net + 'Settings']) {
-          const cfg = s[net + 'Settings'];
-          host = Array.isArray(cfg.host) ? cfg.host[0] : cfg.host || '';
-          path = cfg.path || '';
-        } else if (net === 'tcp' && s.tcpSettings?.header?.type === 'http') {
-          const rq = s.tcpSettings.header.request;
-          host = (rq.headers?.Host || [''])[0] || '';
-          path = (rq.path || [''])[0] || '';
-          p.set('headerType', 'http');
-        }
-        if (host) p.set('host', host);
-        if (path) p.set('path', path);
-        urls.push(`${base}?${p.toString()}#${tag}`);
-      }
 
-      // Base64 ↔ текст
       document.getElementById('btnTextBase64').onclick = () => {
-        const t = inEl.value.trim();
-        if (!t) { outEl.value = 'отсутствует текст'; return; }
-        try { outEl.value = decodeURIComponent(escape(atob(t))); }
-        catch { outEl.value = btoa(unescape(encodeURIComponent(t))); }
+        const t = document.getElementById('inputConfig').value.trim();
+        if (!t) { document.getElementById('outputResult').value = 'отсутствует текст'; return; }
+        try { document.getElementById('outputResult').value = decodeURIComponent(escape(atob(t))); }
+        catch { document.getElementById('outputResult').value = btoa(unescape(encodeURIComponent(t))); }
       };
 
-      // Копировать
       document.getElementById('btnCopy').onclick = () => {
-        const text = outEl.value;
+        const text = document.getElementById('outputResult').value;
         if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(text).then(() => alert('Скопировано!')).catch(fallbackCopy);
-        } else {
-          fallbackCopy();
-        }
-        function fallbackCopy() {
+          navigator.clipboard.writeText(text).then(() => alert('Скопировано!')).catch(fallback);
+        } else fallback();
+        function fallback() {
           const ta = document.createElement('textarea');
-          ta.value = text; ta.setAttribute('wrap','off');
-          ta.style.position='absolute'; ta.style.left='-9999px';
+          ta.value = text; ta.setAttribute('wrap', 'off');
+          ta.style.position = 'absolute'; ta.style.left = '-9999px';
           document.body.appendChild(ta);
           ta.select(); ta.setSelectionRange(0, ta.value.length);
           document.execCommand('copy');
@@ -831,26 +876,25 @@ const countries = [
         }
       };
 
-      // Скачать
       document.getElementById('btnDownload').onclick = () => {
-        const d = outEl.value.trim(); if (!d) return alert('Нет данных');
-        hiddenDownloadLink.href = URL.createObjectURL(new Blob([d], { type: 'text/plain' }));
-        hiddenDownloadLink.download = 'result.txt'; hiddenDownloadLink.click();
-        setTimeout(() => URL.revokeObjectURL(hiddenDownloadLink.href), 1000);
+        const d = document.getElementById('outputResult').value.trim();
+        if (!d) return alert('Нет данных');
+        const link = document.getElementById('hiddenDownloadLink');
+        link.href = URL.createObjectURL(new Blob([d], { type: 'text/plain' }));
+        link.download = 'result.txt'; link.click();
+        setTimeout(() => URL.revokeObjectURL(link.href), 1000);
       };
 
-      // Загрузить файл
-      document.getElementById('btnLoadFile').onclick = () => fileInput.click();
-      fileInput.onchange = e => {
+      document.getElementById('btnLoadFile').onclick = () => document.getElementById('fileInput').click();
+      document.getElementById('fileInput').onchange = e => {
         const fr = new FileReader();
-        fr.onload = () => inEl.value = fr.result;
+        fr.onload = () => document.getElementById('inputConfig').value = fr.result;
         fr.readAsText(e.target.files[0]);
       };
 
-      // Очистить оба поля
       document.getElementById('btnClear').onclick = () => {
-        inEl.value = '';
-        outEl.value = '';
+        document.getElementById('inputConfig').value = '';
+        document.getElementById('outputResult').value = '';
       };
     });
   </script>
