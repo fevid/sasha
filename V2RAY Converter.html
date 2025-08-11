@@ -146,7 +146,6 @@
 
   <script>
      
-   
    const countries = [
   { flag: '🌎', name: 'ОТКЛ' },
   { flag: '🇦🇫', name: 'Afghanistan' },
@@ -577,43 +576,54 @@ function parseIniToWireguard(block) {
       if (st.grpcSettings?.serviceName) p.set('serviceName', st.grpcSettings.serviceName);
       if (st.kcpSettings?.seed) p.set('seed', st.kcpSettings.seed);
 
+      
       let net = st.network || '';
-      if (!net) {
-        if (st.wsSettings) net = 'ws';
-        else if (st.httpupgradeSettings) net = 'httpupgrade';
-        else if (st.splithttpSettings) net = 'splithttp';
-        else if (st.httpSettings) net = 'http';
-        else net = 'tcp';
-      }
-      if (net === 'splithttp') net = 'xhttp';
-      p.set('type', net);
+  if (!net) {
+    if (st.wsSettings) net = 'ws';
+    else if (st.httpupgradeSettings) net = 'httpupgrade';
+    else if (st.splithttpSettings) net = 'splithttp';
+    else if (st.httpSettings) net = 'http';
+    else net = 'tcp';
+  }
+  if (net === 'splithttp') net = 'xhttp';
+  p.set('type', net);
 
-      let host = '';
-      let path = '';
-      if (net === 'ws' && st.wsSettings) {
-        host = st.wsSettings.headers?.Host || '';
-        path = st.wsSettings.path || '';
-      } else if (net === 'xhttp' && st.splithttpSettings) {
-        host = st.splithttpSettings.host || '';
-        path = st.splithttpSettings.path || '';
-      } else if (net === 'httpupgrade' && st.httpupgradeSettings) {
-        host = Array.isArray(st.httpupgradeSettings.host) ? st.httpupgradeSettings.host[0] : st.httpupgradeSettings.host || '';
-        path = st.httpupgradeSettings.path || '';
-      } else if (net === 'http' && st.httpSettings) {
-        host = Array.isArray(st.httpSettings.host) ? st.httpSettings.host[0] : st.httpSettings.host || '';
-        path = st.httpSettings.path || '';
-      } else if (net === 'tcp' && st.tcpSettings?.header?.type === 'http') {
-        const rq = st.tcpSettings.header.request;
-        host = (rq.headers?.Host || [''])[0] || '';
-        path = (rq.path || [''])[0] || '';
-        p.set('headerType', 'http');
-      }
+  let host = '';
+  let path = '';
+  if (net === 'ws' && st.wsSettings) {
+    host = st.wsSettings.headers?.Host || '';
+    path = st.wsSettings.path || '';
+  } else if (net === 'xhttp' && st.xhttpSettings) {
+    host = Array.isArray(st.xhttpSettings.host)
+           ? st.xhttpSettings.host[0]
+           : st.xhttpSettings.host || '';
+    path = st.xhttpSettings.path || '';
+  } else if (net === 'xhttp' && st.splithttpSettings) {
+    host = st.splithttpSettings.host || '';
+    path = st.splithttpSettings.path || '';
+  } else if (net === 'httpupgrade' && st.httpupgradeSettings) {
+    host = Array.isArray(st.httpupgradeSettings.host)
+           ? st.httpupgradeSettings.host[0]
+           : st.httpupgradeSettings.host || '';
+    path = st.httpupgradeSettings.path || '';
+  } else if (net === 'http' && st.httpSettings) {
+    host = Array.isArray(st.httpSettings.host)
+           ? st.httpSettings.host[0]
+           : st.httpSettings.host || '';
+    path = st.httpSettings.path || '';
+  } else if (net === 'tcp' && st.tcpSettings?.header?.type === 'http') {
+    const rq = st.tcpSettings.header.request;
+    host = (rq.headers?.Host || [''])[0] || '';
+    path = (rq.path || [''])[0] || '';
+    p.set('headerType', 'http');
+  }
+  // --- блок завершён ---
 
-      if (host) p.set('host', host);
-      if (path) p.set('path', path);
+  if (host) p.set('host', host);
+  if (path) p.set('path', path);
 
-      urls.push(`${base}?${p.toString()}#${tag}`);
-    }
+  urls.push(`${base}?${p.toString()}#${tag}`);
+}
 
     function decodeVmessBase64(line) {
       try {

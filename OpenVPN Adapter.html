@@ -267,65 +267,98 @@
       });
 
       function adaptConfig() {
-        const raw = inputConfig.value.split(/\r?\n/);
-        if (raw.some(l => /^\s*auth-user-pass\b/.test(l)) && !authValues) {
-          modalAuth.classList.add('active');
-          return;
-        }
-
-        let lines = raw.map(l => l.trim()).filter(l =>
-          l &&
-          !l.startsWith('#') &&
-          !l.startsWith(';') &&
-          !/^management\b/.test(l) &&
-          !/^management-client\b/.test(l) &&
-          !/^management-query-passwords\b/.test(l) &&
-          !/^management-hold\b/.test(l) &&
-          !/^setenv IV_GUI_VER\b/.test(l) &&
-          !/^setenv IV_PLAT_VER\b/.test(l) &&
-          !/^machine-readable-output\b/.test(l) &&
-          !/^auth-user-pass\b/.test(l)
-        );
-
-        function extract(start, end) {
-          const i = lines.indexOf(start), j = lines.indexOf(end);
-          if (i >= 0 && j > i) {
-            const block = lines.slice(i, j + 1);
-            lines.splice(i, j - i + 1);
-            return block;
-          }
-          return [];
-        }
-        const caBlock   = extract('<ca>', '</ca>');
-        const certBlock = extract('<cert>', '</cert>');
-        const keyBlock  = extract('<key>', '</key>');
-
-        const out = ['client'];
-        const remoteIdx = lines.findIndex(l => l.startsWith('remote '));
-
-        lines.forEach((line, idx) => {
-          out.push(line);
-          if (idx === remoteIdx) {
-            if (proxyValues) {
-              out.push(`http-proxy ${proxyValues.host} ${proxyValues.port}`);
-              out.push(`http-proxy-option CUSTOM-HEADER "X-Online-Host: ${proxyValues.xonline}"`);
-              out.push(`http-proxy-option CUSTOM-HEADER "Host: ${proxyValues.hosthdr}"`);
-            }
-            if (authValues) {
-              out.push('<auth-user-pass>');
-              out.push(authValues.user);
-              out.push(authValues.pass);
-              out.push('</auth-user-pass>');
-            }
-          }
-        });
-
-        if (caBlock.length)   out.push(...caBlock);
-        if (certBlock.length) out.push(...certBlock);
-        if (keyBlock.length)  out.push(...keyBlock);
-
-        outputConfig.value = out.join('\n');
-      }
+  const original = inputConfig.value.split(/\r?\n/).map(line => line.trim());
+  const isBlockTag = tag => ['<ca>', '</ca>', '<cert>', '</cert>', '<key>', '</key>', '<auth-user-pass>', '</auth-user-pass>'].includes(tag);
+  const isTrash = l =>
+    /^(\s*#|\s*;)/.test(l) ||
+    /^management\b/.test(l) ||
+    /^setenv\b/.test(l) ||
+    /^machine-readable-output\b/.test(l);
+  const kept = [];
+  let inBlock = false;
+  for (let line of original) {
+    if (isBlockTag(line)) {
+      inBlock = !inBlock;
+      kept.push(line);
+    } else if (inBlock || (!isTrash(line) && line !== '')) {
+      kept.push(line);
+    }
+  }
+  const get = r => kept.filter(l => r.test(l));
+  const find = r => kept.find(l => r.test(l));
+  const has = v => kept.includes(v);
+  const block = tag => {
+    const s = kept.indexOf('<' + tag + '>');
+    const e = kept.indexOf('</' + tag + '>');
+    return s !== -1 && e !== -1 ? kept.slice(s, e + 1) : [];
+  };
+  const remotes = get(/^remote\s+/);
+  const tcp = remotes.find(r => /\btcp/.test(r));
+  const udp = remotes.find(r => /\budp/.test(r));
+  const primaryRemote = tcp || udp || remotes[0] || '';
+  const otherRemotes = remotes.filter(r => r !== primaryRemote);
+  const out = [];
+  out.push('client');
+  out.push('dev tun');
+  if (primaryRemote) out.push(primaryRemote);
+  otherRemotes.forEach(r => out.push('#' + r));
+  if (proxyValues) {
+    out.push(`http-proxy ${proxyValues.host} ${proxyValues.port}`);
+    out.push(`http-proxy-option CUSTOM-HEADER "X-Online-Host: ${proxyValues.xonline}"`);
+    out.push(`http-proxy-option CUSTOM-HEADER "Host: ${proxyValues.hosthdr}"`);
+  }
+  if (authValues) {
+    out.push('<auth-user-pass>');
+    out.push(authValues.user);
+    out.push(authValues.pass);
+    out.push('</auth-user-pass>');
+  }
+  out.push('allow-recursive-routing');
+  out.push(...get(/^route\s+/));
+  out.push(find(/^remote-cert-tls/) || 'remote-cert-tls server');
+  const rm = find(/^route-method/);
+  if (rm) out.push(rm);
+  const rd = find(/^route-delay/);
+  if (rd) out.push(rd);
+  const pri = find(/^persist-remote-ip/);
+  if (pri) out.push(pri);
+  out.push('persist-tun');
+  const pk = find(/^persist-key/);
+  if (pk) out.push(pk);
+  const kd = find(/^key-direction/);
+  if (kd) out.push(kd);
+  out.push('verb 4');
+  out.push('nobind');
+  out.push('ifconfig-nowarn');
+  if (has('float')) out.push('float');
+  const cl = find(/^comp-lzo/);
+  if (cl) out.push(cl);
+  const au = find(/^auth\s+/);
+  if (au) out.push(au);
+  const dc = find(/^data-ciphers/);
+  if (dc) out.push(dc);
+  const cip = find(/^cipher/);
+  if (cip) out.push(cip);
+  const ar = find(/^auth-retry/);
+  if (ar) out.push(ar);
+  const anc = find(/^auth-nocache/);
+  if (anc) out.push(anc);
+  out.push(find(/^connect-retry/) || 'connect-retry infinite');
+  out.push(find(/^resolv-retry/) || 'resolv-retry infinite');
+  out.push('mssfix');
+  const mtu = find(/^tun-mtu-extra/);
+  if (mtu) out.push(mtu);
+  const ka = find(/^keepalive/);
+  if (ka) out.push(ka);
+  out.push(...get(/^dhcp-option\s+DNS/));
+  const dom = find(/^dhcp-option DOMAIN/);
+  if (dom) out.push(dom);
+  out.push('');
+  out.push(...block('ca'));
+  out.push(...block('key'));
+  out.push(...block('cert'));
+  outputConfig.value = out.join('\n');
+}
 
       btnAdapt.addEventListener('click', adaptConfig);
       btnClear.addEventListener('click', () => {
@@ -363,6 +396,27 @@
         reader.readAsText(file);
       });
     });
+    
+    // ПАТЧ для правильной адаптации TCP/UDP
+const originalAdapt = adaptConfig;
+adaptConfig = function () {
+  originalAdapt();
+
+  const out = outputConfig.value.split(/\r?\n/);
+  const remotes = out.filter(l => l.startsWith('remote ') && !l.startsWith('#'));
+  const tcp = remotes.filter(l => l.includes('tcp'));
+  const udp = remotes.filter(l => l.includes('udp'));
+  const primary = tcp[0] || udp[0];
+  const others = remotes.filter(r => r !== primary).map(r => '#' + r);
+
+  const result = out.filter(l => !l.startsWith('remote ') || l.startsWith('#'));
+  const insertIndex = result.findIndex(l => l.trim() === 'dev tun');
+  if (insertIndex !== -1) {
+    result.splice(insertIndex + 1, 0, primary, ...others);
+    outputConfig.value = result.join('\n');
+  }
+};
+    
   </script>
 </body>
 </html>
