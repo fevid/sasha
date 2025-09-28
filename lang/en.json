@@ -1,0 +1,16 @@
+{
+    "main_title": "Network Tools Hub",
+    "subtitle": "Network Configuration Suite",
+    "description": "Advanced tools for network configuration management, protocol conversion, and VPN optimization. Streamline your network setup with our comprehensive toolkit.",
+    "v2ray_title": "V2Ray Config Converter",
+    "v2ray_description": "Universal converter for V2Ray configurations with support for multiple protocols including VMess, VLess, Trojan, Shadowsocks, WireGuard, and Hysteria2.",
+    "v2ray_feature_1": "JSON ↔ URL bidirectional conversion",
+    "v2ray_feature_2": "Text ↔ Base64 bidirectional conversion",
+    "openvpn_title": "OpenVPN Config Adapter",
+    "openvpn_description": "Intelligent OpenVPN configuration optimizer that cleans, adapts, and enhances .ovpn files for better compatibility and performance.",
+    "openvpn_feature_1": "Automatic configuration cleanup",
+    "openvpn_feature_2": "Proxy and authentication integration",
+    "open_tool": "Open Tool",
+    "footer_text": "Professional network tools for enhanced connectivity and security",
+    "language_changed": "Language changed to English"
+}

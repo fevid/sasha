@@ -1,0 +1,16 @@
+{
+    "main_title": "Ağ Araçları Merkezi",
+    "subtitle": "Ağ Yapılandırma Paketi",
+    "description": "Ağ yapılandırma yönetimi, protokol dönüştürme ve VPN optimizasyonu için gelişmiş araçlar. Kapsamlı araç setimizle ağ kurulumunuzu kolaylaştırın.",
+    "v2ray_title": "V2Ray Yapılandırma Dönüştürücü",
+    "v2ray_description": "VMess, VLess, Trojan, Shadowsocks, WireGuard ve Hysteria2 dahil olmak üzere birden fazla protokolü destekleyen evrensel V2Ray yapılandırma dönüştürücü.",
+    "v2ray_feature_1": "JSON ↔ URL çift yönlü dönüşüm",
+    "v2ray_feature_2": "Text ↔ Base64 çift yönlü dönüşüm",
+    "openvpn_title": "OpenVPN Yapılandırma Adaptörü",
+    "openvpn_description": "Daha iyi uyumluluk ve performans için .ovpn dosyalarını temizleyen, uyarlayan ve geliştiren akıllı OpenVPN yapılandırma optimize edici.",
+    "openvpn_feature_1": "Otomatik yapılandırma temizleme",
+    "openvpn_feature_2": "Proxy ve kimlik doğrulama entegrasyonu",
+    "open_tool": "Aracı Aç",
+    "footer_text": "Gelişmiş bağlantı ve güvenlik için profesyonel ağ araçları",
+    "language_changed": "Dil Türkçe olarak değiştirildi"
+}

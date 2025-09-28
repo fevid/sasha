@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>V2Ray Config Converter</title>
+  <meta name="description" content="Convert between V2Ray JSON and URL formats with GeoIP, ping, and settings" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:ital,wght@0,100..700;1,100..700&family=Lalezar&family=Noto+Sans+TC:wght@100..900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+  <script defer src="https://cdn.jsdelivr.net/npm/js-yaml@4/dist/js-yaml.min.js"></script>
+  <script defer src="script.js"></script>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="header">
+      <div class="logo-container">
+          <img id="logo" src="assets/v2ray.png" alt="Logo" />
+      </div>
+      <h1 class="main-title rtl-target" data-i18n="app_title">V2Ray Config Converter</h1>
+      <p class="subtitle rtl-target" data-i18n="app_subtitle">(Vmess Vless Trojan Shadowsocks WireGuard Hysteria2)</p>
+
+      <div class="custom-dropdown" id="languageSwitcher">
+        <div class="dropdown-selected">
+          <span class="selected-text">English</span>
+          <span class="dropdown-arrow">▼</span>
+        </div>
+        <div class="dropdown-options">
+          <div class="dropdown-option active" data-value="en">English</div>
+          <div class="dropdown-option" data-value="ru">Русский</div>
+          <div class="dropdown-option" data-value="tr">Türkçe</div>
+          <div class="dropdown-option" data-value="fa">فارسی</div>
+          <div class="dropdown-option" data-value="zh">中文</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="container-columns">
+      <div class="container">
+        <div class="section-title" data-i18n="input_section">Input</div>
+        <textarea id="inputConfig" class="textarea1" data-i18n-placeholder="input_placeholder" placeholder="Paste JSON, URL, or text..."></textarea>
+
+        <div class="action-btns">
+          <button id="btnConvert" class="convert-btn">
+            <span data-i18n="json_to_url">JSON → URL</span>
+          </button>
+          <button id="btnConvertBack" class="convert-btn">
+            <span data-i18n="url_to_json">URL → JSON</span>
+          </button>
+        </div>
+
+        <div class="button-container">
+          <button id="btnTextBase64" class="download-btn">
+            <span data-i18n="text_base64">Text ↔ Base64</span>
+          </button>
+          <button id="btnLoadFile" class="download-btn">
+            <span data-i18n="load_file">Load File</span>
+          </button>
+        </div>
+
+        <div class="clear-row">
+          <button id="btnClearInput" class="clear-btn">
+            <span data-i18n="clear_input">Clear Input</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="container2">
+        <div class="section-title" data-i18n="output_section">Output</div>
+        <textarea id="outputResult" class="textarea1 output" data-i18n-placeholder="output_placeholder" placeholder="Result will appear here..."></textarea>
+
+        <div class="button-container">
+          <button id="btnCopy" class="download-btn">
+            <span data-i18n="copy">Copy</span>
+          </button>
+          <button id="btnDownload" class="download-btn">
+            <span data-i18n="download">Download</span>
+          </button>
+        </div>
+
+        <div class="clear-row">
+          <button id="btnClearOutput" class="clear-btn">
+            <span data-i18n="clear_output">Clear Output</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Controls Row -->
+    <div class="controls-panel">
+      <div class="geo-row">
+        <label class="checkbox-label">
+          <input type="checkbox" id="ipGeoToggle" />
+          <span data-i18n="geoip">GeoIP</span>
+        </label>
+        <input type="text" id="geoServiceInput" data-i18n-placeholder="geo_service_url" placeholder="https://ipwhois.app/json/{ip}" />
+      </div>
+
+      <div class="filter-row">
+        <div class="filter-controls">
+          <button id="btnCountry" class="icon-btn" title="Select Country">🌎</button>
+          <button id="btnPing" class="icon-btn" title="Ping Tester">🏓</button>
+          <input type="text" id="filterInput" data-i18n-placeholder="filter_placeholder" placeholder="Search text, flag, URL..." />
+          <button id="btnSettings" class="icon-btn" title="Settings">⚙️</button>
+          <button id="btnFilter" class="filter-btn">
+            <span data-i18n="apply_filter">Apply</span>
+          </button>
+        </div>
+        <div id="statusContainer">
+          <div class="spinner" id="spinner"></div>
+          <span id="processStatus"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-container">
+      <a href="https://coindrop.to/fevid101" target="_blank" class="donation-btn">
+          <img class="donate-img" src="assets/donate.svg" alt="Donate" />
+          <span data-i18n="donate">Support The Author</span>
+      </a>
+      <a href="https://github.com/fevid/sasha" target="_blank" class="donation-btn">
+          <img class="donate-img" src="assets/github.svg" alt="Github" />
+          <span>Github</span>
+      </a>
+  </div>
+
+    <!-- Country Popup -->
+    <div id="countryPopup" class="modal-overlay">
+      <div class="modal country-modal rtl-target">
+        <div class="modal-header">
+          <h3 data-i18n="select_country">Select Country</h3>
+          <button class="modal-close" id="closeCountryPopup">×</button>
+        </div>
+        <div class="modal-body">
+          <input type="text" id="countrySearch" data-i18n-placeholder="search_country" placeholder="Search country..." />
+          <div class="country-list" id="countryList"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal-overlay">
+      <div class="modal settings-modal rtl-target">
+        <div class="modal-header">
+          <h3 data-i18n="settings">Settings</h3>
+          <button class="modal-close" id="closeSettings">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="input-with-button">
+            <div class="input-group">
+                <label for="replaceWsHostInput" data-i18n="ws_host">WS Host</label>
+                <input type="text" id="replaceWsHostInput" data-i18n-placeholder="new_ws_host" placeholder="New WS host" />
+            </div>
+            <button id="btnReplaceWsHost" class="modal-btn ok-btn" data-i18n="apply">Apply</button>
+          </div>
+
+          <div class="input-with-button">
+            <div class="input-group">
+                <label for="replaceWsHostInput" data-i18n="sni">SNI</label>
+                <input type="text" id="replaceSniInput" data-i18n-placeholder="new_sni" placeholder="New SNI" />
+            </div>
+            <button id="btnReplaceSni" class="modal-btn ok-btn" data-i18n="apply">Apply</button>
+          </div>
+
+          <div class="input-with-button">
+            <div class="input-group">
+                <label for="replaceWsHostInput" data-i18n="name">Name</label>
+                <input type="text" id="replaceNameInput" data-i18n-placeholder="new_name" placeholder="New name" />
+            </div>
+            <button id="btnReplaceName" class="modal-btn ok-btn" data-i18n="apply">Apply</button>
+          </div>
+
+        </div>
+        <div class="modal-actions">
+          <button id="ipWsToggle" class="modal-btn secondary-btn">
+            <span data-i18n="ip_to_ws">IP → WS Host</span>
+          </button>
+          <button id="btnDedup" class="modal-btn secondary-btn">
+            <span data-i18n="dedup">Deduplicate</span>
+          </button>
+          <button id="closeSettingsBottom" class="modal-btn cancel-btn">
+            <span data-i18n="close">Close</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <input type="file" id="fileInput" accept=".txt,.json,.yaml,.yml" class="hidden-input" />
+    <a id="hiddenDownloadLink" style="display:none;"></a>
+  </div>
+</body>
+</html>

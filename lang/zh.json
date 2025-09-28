@@ -1,0 +1,16 @@
+{
+    "main_title": "网络工具中心",
+    "subtitle": "专业网络配置套件",
+    "description": "用于网络配置管理、协议转换和VPN优化的高级工具。使用我们全面的工具包简化您的网络设置。",
+    "v2ray_title": "V2Ray 配置转换器",
+    "v2ray_description": "支持多种协议的通用V2Ray配置转换器，包括VMess、VLess、Trojan、Shadowsocks、WireGuard和Hysteria2。",
+    "v2ray_feature_1": "JSON ↔ URL 双向转换",
+    "v2ray_feature_2": "Text ↔ Base64 双向转换",
+    "openvpn_title": "OpenVPN 配置适配器",
+    "openvpn_description": "智能OpenVPN配置优化器，可清理、调整和增强.ovpn文件以获得更好的兼容性和性能。",
+    "openvpn_feature_1": "自动配置清理",
+    "openvpn_feature_2": "代理和认证集成",
+    "open_tool": "打开工具",
+    "footer_text": "专业网络工具，提供增强的连接性和安全性",
+    "language_changed": "语言已更改为中文"
+}

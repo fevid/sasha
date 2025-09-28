@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Tools Hub</title>
+    <meta name="description" content="Network configuration tools - V2Ray Converter and OpenVPN Adapter">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:ital,wght@0,100..700;1,100..700&family=Lalezar&family=Noto+Sans+TC:wght@100..900&display=swap" rel="stylesheet">
+    <style>
+        /* CSS Reset and Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #00ff88;
+            --primary-dark: #00cc66;
+            --secondary: #764ba2;
+            --accent: #f093fb;
+            --background: #0f0f23;
+            --surface: #1a1a2e;
+            --surface-hover: #16213e;
+            --text: #ffffff;
+            --text-secondary: #a8a8b3;
+            --border: #2d2d48;
+            --success: #00d4aa;
+            --warning: #ffb347;
+            --error: #ff6b6b;
+            --glass-bg: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.12);
+            --shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: var(--text);
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+            font-family: "Josefin Sans", sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.4) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.4) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.3) 0%, transparent 50%);
+            z-index: -1;
+            animation: bgFloat 20s ease-in-out infinite;
+        }
+
+        @keyframes bgFloat {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            padding: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 4rem;
+            animation: fadeInUp 1s ease-out;
+            position: relative;
+        }
+
+        .main-title {
+            font-size: 3.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #fff 0%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.02em;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+            opacity: 0.9;
+            font-weight: 400;
+            margin-bottom: 1rem;
+        }
+
+        .description {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            opacity: 0.8;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        /* Tools Grid */
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+            margin-bottom: 4rem;
+        }
+
+        .tool-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 1.5rem;
+            padding: 2.5rem;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+            animation: fadeInUp 1s ease-out;
+            animation-delay: 0.2s;
+            animation-fill-mode: backwards;
+        }
+
+        .tool-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            border-radius: 1.5rem 1.5rem 0 0;
+        }
+
+        .tool-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: var(--shadow);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .tool-card:hover::after {
+            opacity: 1;
+        }
+
+        .tool-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(0, 255, 136, 0.1) 0%, rgba(240, 147, 251, 0.1) 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            border-radius: 1.5rem;
+            z-index: -1;
+        }
+
+        .tool-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            border-radius: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            margin-bottom: 1.5rem;
+            transition: transform 0.3s ease;
+        }
+
+        .tool-icon img{
+            max-width: 70%;
+        }
+
+        .tool-card:hover .tool-icon {
+            transform: scale(1.1) rotate(5deg);
+        }
+
+        .tool-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 1rem;
+        }
+
+        .tool-description {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+            font-size: 0.95rem;
+        }
+
+        .tool-features {
+            list-style: none;
+            margin-bottom: 1.5rem;
+        }
+
+        .tool-features li {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+            padding-left: 1.2rem;
+            position: relative;
+        }
+
+        .tool-features li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: var(--primary);
+            font-weight: bold;
+        }
+
+        .tool-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .tool-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .tool-button::after {
+            content: '→';
+            transition: transform 0.3s ease;
+        }
+
+        .tool-card:hover .tool-button::after {
+            transform: translateX(3px);
+        }
+
+        /* Language Dropdown */
+        .custom-dropdown {
+    position: absolute;
+    top: 0;
+    right: 0;
+    min-width: 130px;
+    z-index: 1000;
+}
+
+.dropdown-selected {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    color: var(--text);
+    padding: 0.75rem 1rem;
+    border-radius: 1rem;
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.dropdown-selected:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.25);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(255, 255, 255, 0.15);
+}
+
+.dropdown-arrow {
+    transition: transform 0.3s ease;
+    font-size: 0.8rem;
+    opacity: 0.7;
+}
+
+.custom-dropdown.open .dropdown-arrow {
+    transform: rotate(180deg);
+}
+
+.custom-dropdown.open .dropdown-selected {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(0, 255, 136, 0.2), 0 8px 25px rgba(0, 255, 136, 0.1);
+}
+
+.dropdown-options {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    left: 0;
+    right: 0;
+    background: var(--glass-bg);
+    backdrop-filter: blur(25px);
+    border: 1px solid var(--glass-border);
+    border-radius: 1rem;
+    overflow: hidden;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    z-index: 1001;
+}
+
+.custom-dropdown.open .dropdown-options {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.dropdown-option {
+    padding: 0.75rem 1rem;
+    color: var(--text);
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.dropdown-option:last-child {
+    border-bottom: none;
+}
+
+.dropdown-option:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--primary);
+    padding-left: 1.25rem;
+}
+
+.dropdown-option.active {
+    background: rgba(0, 255, 136, 0.15);
+    color: var(--primary);
+    font-weight: 600;
+}
+
+.dropdown-option.active::before {
+    content: '✓';
+    position: absolute;
+    left: 0.75rem;
+    color: var(--primary);
+    font-weight: bold;
+}
+
+.dropdown-option.active {
+    padding-left: 2rem;
+}
+
+.selected-text {
+    transform: translateY(2px);
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+    .custom-dropdown {
+        position: static;
+        margin: 1rem auto 0;
+        width: fit-content;
+    }
+}
+
+@media (max-width: 480px) {
+    .custom-dropdown {
+        min-width: 110px;
+    }
+    
+    .dropdown-selected {
+        font-size: 0.85rem;
+        padding: 0.6rem 0.8rem;
+    }
+    
+    .dropdown-option {
+        font-size: 0.85rem;
+        padding: 0.6rem 0.8rem;
+    }
+    
+    .dropdown-option.active {
+        padding-left: 1.8rem;
+    }
+}
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            opacity: 0.7;
+            animation: fadeInUp 1s ease-out;
+            animation-delay: 0.6s;
+            animation-fill-mode: backwards;
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .main-title {
+                font-size: 2.5rem;
+            }
+
+            .tools-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+                margin-bottom: 2rem;
+            }
+
+            .tool-card {
+                padding: 2rem;
+            }
+
+            .language-dropdown {
+                position: static;
+                text-align: center;
+                margin-bottom: 2rem;
+            }
+
+            .header {
+                margin-bottom: 2rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .main-title {
+                font-size: 2rem;
+            }
+
+            .subtitle {
+                font-size: 1rem;
+            }
+
+            .tools-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .tool-card {
+                padding: 1.5rem;
+            }
+        }
+
+        /* RTL Support */
+        .rtl-text {
+            direction: rtl;
+        }
+
+        body.lang-zh {
+            font-family: "Noto Sans TC", sans-serif;
+        }
+
+        body.lang-en, body.lang-tr {
+            font-family: "Josefin Sans", sans-serif;
+        }
+
+        body.lang-fa {
+            font-family: "Lalezar", sans-serif;
+        }
+
+        body.lang-fa .rtl-text {
+            text-align: right;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h1 class="main-title" data-i18n="main_title">Network Tools Hub</h1>
+            <p class="subtitle" data-i18n="subtitle">Professional Network Configuration Suite</p>
+            <p class="description rtl-target" data-i18n="description">Advanced tools for network configuration management, protocol conversion, and VPN optimization. Streamline your network setup with our comprehensive toolkit.</p>
+            <div class="custom-dropdown" id="languageSwitcher">
+                <div class="dropdown-selected">
+                    <span class="selected-text">English</span>
+                    <span class="dropdown-arrow">▼</span>
+                </div>
+                <div class="dropdown-options">
+                    <div class="dropdown-option active" data-value="en">English</div>
+                    <div class="dropdown-option" data-value="ru">Русский</div>
+                    <div class="dropdown-option" data-value="tr">Türkçe</div>
+                    <div class="dropdown-option" data-value="fa">فارسی</div>
+                    <div class="dropdown-option" data-value="zh">中文</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tools-grid rtl-target">
+            <a href="./v2ray-converter/" class="tool-card">
+                <div class="tool-icon"><img id="logo" src="./v2ray-converter/assets/v2ray.png" alt="Logo" /></div>
+                <h2 class="tool-title" data-i18n="v2ray_title">V2Ray Config Converter</h2>
+                <p class="tool-description" data-i18n="v2ray_description">Universal converter for V2Ray configurations with support for multiple protocols including VMess, VLess, Trojan, Shadowsocks, WireGuard, and Hysteria2.</p>
+                <ul class="tool-features">
+                    <li data-i18n="v2ray_feature_1">JSON ↔ URL bidirectional conversion</li>
+                    <li data-i18n="v2ray_feature_3">Text ↔ Base64 bidirectional conversion</li>
+                </ul>
+                <span class="tool-button" data-i18n="open_tool">Open Tool</span>
+            </a>
+
+            <a href="./openvpn-adapter/" class="tool-card">
+                <div class="tool-icon"><img id="logo" src="./openvpn-adapter/assets/openvpn.svg" alt="Logo" /></div>
+                <h2 class="tool-title rtl-target" data-i18n="openvpn_title">OpenVPN Config Adapter</h2>
+                <p class="tool-description rtl-target" data-i18n="openvpn_description">Intelligent OpenVPN configuration optimizer that cleans, adapts, and enhances .ovpn files for better compatibility and performance.</p>
+                <ul class="tool-features">
+                    <li data-i18n="openvpn_feature_1">Automatic configuration cleanup</li>
+                    <li data-i18n="openvpn_feature_2">Proxy and authentication integration</li>
+                </ul>
+                <span class="tool-button" data-i18n="open_tool">Open Tool</span>
+            </a>
+        </div>
+
+        <div class="footer">
+            <p data-i18n="footer_text">Professional network tools for enhanced connectivity and security</p>
+        </div>
+    </div>
+
+    <script>
+        // Language Management
+        const SUPPORTED_LANGS = ["ru", "en", "tr", "fa", "zh"];
+        let currentLang = localStorage.getItem("lang") || "en";
+        let translations = {};
+
+        // Setup Language Dropdown
+        function setupLanguageDropdown() {
+            const dropdown = document.getElementById('languageSwitcher');
+            const selected = dropdown.querySelector('.dropdown-selected');
+            const options = dropdown.querySelectorAll('.dropdown-option');
+
+            selected.addEventListener('click', function(event) {
+                event.stopPropagation();
+                dropdown.classList.toggle('open');
+            });
+
+            options.forEach(option => {
+                option.addEventListener('click', function() {
+                    const selectedLang = this.dataset.value;
+                    loadLanguage(selectedLang);
+                    dropdown.classList.remove('open');
+                });
+            });
+
+            document.addEventListener('click', function(event) {
+                if (!dropdown.contains(event.target)) {
+                    dropdown.classList.remove('open');
+                }
+            });
+
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Escape') {
+                    dropdown.classList.remove('open');
+                }
+            });
+        }
+
+        function updateDropdownSelection(lang) {
+            const dropdown = document.getElementById('languageSwitcher');
+            const selectedText = dropdown.querySelector('.selected-text');
+            const options = dropdown.querySelectorAll('.dropdown-option');
+
+            options.forEach(option => option.classList.remove('active'));
+
+            const activeOption = dropdown.querySelector(`[data-value="${lang}"]`);
+            if (activeOption) {
+                activeOption.classList.add('active');
+                selectedText.textContent = activeOption.textContent;
+            }
+        }
+
+        async function loadLanguage(lang) {
+            try {
+                const response = await fetch(`./lang/${lang}.json`);
+                if (!response.ok) throw new Error(`Language file not found: ${lang}`);
+
+                const languageData = await response.json();
+                translatePage(languageData);
+
+                document.body.classList.remove('fa-lang');
+                const rtlTargets = document.querySelectorAll('.rtl-target');
+                
+                if (lang === 'fa') {
+                    document.body.classList.add('fa-lang');
+                    rtlTargets.forEach(el => el.classList.add('rtl-text'));
+                } else {
+                    rtlTargets.forEach(el => el.classList.remove('rtl-text'));
+                }
+
+                localStorage.setItem("lang", lang);
+                document.body.className = document.body.className.replace(/lang-\w+/g, '') + ` lang-${lang}`;
+                currentLang = lang;
+                updateDropdownSelection(lang);
+
+                showNotification(languageData.language_changed || `Language changed to ${getLanguageName(lang)}`, 'info');
+            } catch (error) {
+                console.error('Failed to load language:', error);
+                showNotification('Failed to load language', 'error');
+            }
+        }
+
+        function translatePage(languageData) {
+            translations = languageData;
+
+            document.querySelectorAll("[data-i18n]").forEach(element => {
+                const key = element.getAttribute("data-i18n");
+                if (languageData[key]) {
+                    element.textContent = languageData[key];
+                }
+            });
+
+            document.querySelectorAll("[data-i18n-placeholder]").forEach(element => {
+                const key = element.getAttribute("data-i18n-placeholder");
+                if (languageData[key]) {
+                    element.placeholder = languageData[key];
+                }
+            });
+        }
+
+        function getLanguageName(lang) {
+            const names = {
+                ru: 'Русский',
+                en: 'English',
+                tr: 'Türkçe',
+                fa: 'فارسی',
+                zh: '中文'
+            };
+            return names[lang] || lang;
+        }
+
+        function showNotification(message, type = 'success') {
+            document.querySelectorAll('.notification').forEach(el => el.remove());
+
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            
+            if (currentLang === 'fa') {
+                notification.classList.add('rtl-text');
+            }
+
+            notification.textContent = message;
+            
+            Object.assign(notification.style, {
+                position: 'fixed',
+                top: '20px',
+                right: '20px',
+                padding: '1rem 1.5rem',
+                borderRadius: '1rem',
+                color: 'white',
+                fontWeight: '600',
+                zIndex: '10000',
+                opacity: '0',
+                transform: 'translateX(100%)',
+                transition: 'all 0.3s ease',
+                backdropFilter: 'blur(20px)',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                boxShadow: '0 8px 32px rgba(31, 38, 135, 0.37)',
+                textAlign: currentLang === 'fa' ? 'right' : 'left'
+            });
+
+            const bg = {
+                success: 'linear-gradient(135deg, #00d4aa 0%, #00b4d8 100%)',
+                error: 'linear-gradient(135deg, #ff6b6b 0%, #c46539 100%)',
+                info: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+            };
+            notification.style.background = bg[type] || bg.success;
+
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.style.opacity = '1';
+                notification.style.transform = 'translateX(0)';
+            }, 10);
+
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            setupLanguageDropdown();
+            if (currentLang !== 'en') {
+                loadLanguage(currentLang);
+            } else {
+                updateDropdownSelection(currentLang);
+                if (currentLang === 'fa') {
+                    document.body.classList.add('fa-lang');
+                    document.querySelectorAll('.rtl-target').forEach(el => {
+                        el.classList.add('rtl-text');
+                    });
+                }
+            }
+        });
+    </script>
+</body>
+</html>

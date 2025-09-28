@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenVPN Config Adapter</title>
+    <meta name="description" content="Modern OpenVPN configuration adapter with proxy and authentication support">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:ital,wght@0,100..700;1,100..700&family=Lalezar&family=Noto+Sans+TC:wght@100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <script defer src="script.js"></script>
+</head>
+<body>
+    <div class="wrapper">
+        <div class="header">
+            <div class="logo-container">
+                <img id="logo" src="assets/openvpn.svg" alt="Logo" />
+            </div>
+            
+            <h1 class="main-title rtl-target" data-i18n="main_title">OpenVPN Config Adapter</h1>
+            <p class="subtitle rtl-target" data-i18n="subtitle">Adapt your OpenVPN configurations with modern settings</p>
+
+            <div class="custom-dropdown" id="languageSwitcher">
+                <div class="dropdown-selected">
+                    <span class="selected-text">English</span>
+                    <span class="dropdown-arrow">▼</span>
+                </div>
+                <div class="dropdown-options">
+                    <div class="dropdown-option active" data-value="en">English</div>
+                    <div class="dropdown-option" data-value="ru">Русский</div>
+                    <div class="dropdown-option" data-value="tr">Türkçe</div>
+                    <div class="dropdown-option" data-value="fa">فارسی</div>
+                    <div class="dropdown-option" data-value="zh">中文</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="container-columns">
+            <div class="container">
+                <div class="section-title" data-i18n="config_section">Configuration</div>
+
+                <label for="fileInput" class="custom-file-upload" id="fileUploadLabel">
+                    <span class="upload-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14,2 14,8 20,8"/>
+                            <line x1="16" y1="13" x2="8" y2="13"/>
+                            <line x1="16" y1="17" x2="8" y2="17"/>
+                            <polyline points="10,9 9,9 8,9"/>
+                        </svg>
+                    </span>
+                    <span class="upload-text" data-i18n="choose_file">Choose file</span>
+                </label>
+                <input type="file" id="fileInput" class="hidden-input" accept=".conf, .ovpn">
+
+                <textarea id="inputConfig" class="textarea1" data-i18n-placeholder="paste_config" placeholder="Paste original OpenVPN configuration here..."></textarea>
+
+                <div class="action-btns">
+                    <button id="btnAdapt" class="convert-btn">
+                        <span class="btn-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="16 18 22 12 16 6"/>
+                                <polyline points="8 6 2 12 8 18"/>
+                            </svg>
+                        </span>
+                        <span data-i18n="adapt">Adapt</span>
+                    </button>
+                    <button id="btnClear" class="clear-btn">
+                        <span data-i18n="clear">Clear</span>
+                    </button>
+                </div>
+
+                <textarea id="outputConfig" class="textarea1 output" data-i18n-placeholder="adapted_output" placeholder="Adapted configuration will appear here..."></textarea>
+                
+                <div class="button-container">
+                    <button id="btnDownload" class="download-btn">
+                        <span class="btn-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="7 10 12 15 17 10"/>
+                                <line x1="12" y1="15" x2="12" y2="3"/>
+                            </svg>
+                        </span>
+                        <span data-i18n="download">Download</span>
+                    </button>
+                    <button id="btnCopy" class="download-btn">
+                        <span class="btn-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                            </svg>
+                        </span>
+                        <span data-i18n="copy">Copy</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="container2 rtl-target">
+                <div class="section-title" data-i18n="settings_section">Settings</div>
+
+                <div class="settings-group">
+                    <div class="settings-group-title" data-i18n="advanced_options">Advanced Options</div>
+                    
+                    <button id="btnProxyToggle" class="setting-btn">
+                        <span class="btn-icon">...</span>
+                        <span data-i18n="http_proxy">HTTP Proxy</span>
+                    </button>
+
+                    <button id="btnAuthToggle" class="setting-btn">
+                        <span class="btn-icon">...</span>
+                        <span data-i18n="authentication">Authentication</span>
+                    </button>
+                </div>
+
+                <div class="info-panel">
+                    <div class="info-title" data-i18n="info_title">Information</div>
+                    <div class="info-content">
+                        <p data-i18n="info_text">This adapter optimizes your OpenVPN configurations by removing unnecessary parameters and adding recommended settings for stable connection.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-container">
+            <a href="https://coindrop.to/fevid101" target="_blank" class="donation-btn">
+                <img class="donate-img" src="assets/donate.svg" alt="Donate" />
+                <span data-i18n="donate">Support The Author</span>
+            </a>
+            <a href="https://github.com/fevid/sasha" target="_blank" class="donation-btn">
+                <img class="donate-img" src="assets/github.svg" alt="Github" />
+                <span>Github</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Auth Modal -->
+    <div id="modalAuth" class="modal-overlay">
+        <div class="modal rtl-target">
+            <div class="modal-header">
+                <h3 data-i18n="auth_title">Authentication Setup</h3>
+                <button class="modal-close" id="authClose">...</button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group">
+                    <label for="authUser" data-i18n="username">Username</label>
+                    <input type="text" id="authUser" data-i18n-placeholder="enter_username" placeholder="Enter username">
+                </div>
+                <div class="input-group">
+                    <label for="authPass" data-i18n="password">Password</label>
+                    <input type="password" id="authPass" data-i18n-placeholder="enter_password" placeholder="Enter password">
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn ok-btn" id="authOk" data-i18n="apply">Apply</button>
+                <button class="modal-btn cancel-btn" id="authCancel" data-i18n="cancel">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Proxy Modal -->
+    <div id="modalProxy" class="modal-overlay">
+        <div class="modal rtl-target">
+            <div class="modal-header">
+                <h3 data-i18n="proxy_title">HTTP Proxy Setup</h3>
+                <button class="modal-close" id="proxyClose">...</button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group">
+                    <label for="proxyHost">IP / Host</label>
+                    <input type="text" id="proxyHost" placeholder="0.0.0.0">
+                </div>
+                <div class="input-group">
+                    <label for="proxyPort" data-i18n="port">Port</label>
+                    <input type="text" id="proxyPort" placeholder="80">
+                </div>
+                <div class="input-group">
+                    <label for="proxyXonline">X-Online-Host</label>
+                    <input type="text" id="proxyXonline" placeholder="host.com">
+                </div>
+                <div class="input-group">
+                    <label for="proxyHostHeader">Host Header</label>
+                    <input type="text" id="proxyHostHeader" placeholder="host.com">
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn ok-btn" id="proxyOk" data-i18n="apply">Apply</button>
+                <button class="modal-btn cancel-btn" id="proxyCancel" data-i18n="cancel">Cancel</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

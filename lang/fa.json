@@ -1,0 +1,16 @@
+{
+    "main_title": "مرکز ابزارهای شبکه",
+    "subtitle": "سوئیت پیکربندی شبکه ",
+    "description": "ابزارهای پیشرفته برای مدیریت پیکربندی شبکه، تبدیل پروتکل و بهینه سازی VPN. راه اندازی شبکه خود را با مجموعه ابزار جامع ما ساده کنید.",
+    "v2ray_title": "مبدل پیکربندی V2Ray",
+    "v2ray_description": "مبدل جهانی برای پیکربندی های V2Ray با پشتیبانی از پروتکل های متعدد شامل VMess, VLess, Trojan, Shadowsocks, WireGuard و Hysteria2.",
+    "v2ray_feature_1": "تبدیل دوطرفه JSON ↔ URL",
+    "v2ray_feature_2": "تبدیل دوطرفه Text ↔ Base64",
+    "openvpn_title": "آداپتور پیکربندی OpenVPN",
+    "openvpn_description": "بهینه ساز هوشمند پیکربندی OpenVPN که فایل های .ovpn را برای سازگاری و عملکرد بهتر تمیز، تطبیق و بهبود می بخشد.",
+    "openvpn_feature_1": "پاکسازی خودکار پیکربندی",
+    "openvpn_feature_2": "ادغام پراکسی و احراز هویت",
+    "open_tool": "باز کردن ابزار",
+    "footer_text": "ابزارهای شبکه حرفه ای برای اتصال و امنیت پیشرفته",
+    "language_changed": "زبان به فارسی تغییر کرد"
+}
