@@ -39,4 +39,4 @@ Then open [http://localhost:8000](http://localhost:8000) in your browser.
 
 ## 🗂 Other Projects
 
-- [WireGuard DPI Circumvention Converter](https://github.com/fevid/wireguard-dpi-circumvention-converter])
+- [WireGuard DPI Circumvention Converter](https://github.com/fevid/wireguard-dpi-circumvention-converter)
