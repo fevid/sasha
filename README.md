@@ -40,3 +40,8 @@ Then open [http://localhost:8000](http://localhost:8000) in your browser.
 ## 🗂 Other Projects
 
 - [WireGuard DPI Circumvention Converter](https://github.com/fevid/wireguard-dpi-circumvention-converter)
+
+
+<a href="https://nowpayments.io/donation?api_key=bc7f43a9-c6fe-4382-a8eb-69001c7a5fe0" target="_blank" rel="noreferrer noopener">
+    <img src="https://nowpayments.io/images/embeds/donation-button-black.svg" alt="Crypto donation button by NOWPayments">
+</a>
